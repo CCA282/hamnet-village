@@ -17,7 +17,6 @@ describe('harvest cooldown', () => {
   })
 
   it('decreases with each harvest_speed level', () => {
-    const base = effectiveHarvestCd(0)
     for (let lvl = 1; lvl <= 3; lvl++) {
       expect(effectiveHarvestCd(lvl)).toBeLessThan(effectiveHarvestCd(lvl - 1))
     }

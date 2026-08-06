@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive } from 'vue'
-import { game, upgradeCost, canAfford, buyUpgrade, upgradeMaxed, menuEntries, globalCap, TAB_KEYS } from '../game/store.js'
+import { game, upgradeCost, canAfford, buyUpgrade, upgradeMaxed, globalCap, TAB_KEYS } from '../game/store.js'
 import { UPGRADES, GLOBAL_CAPACITY_LEVELS } from '../game/constants/index.js'
 import { engine } from '../game/engine.js'
 import { spriteUrl } from '../game/sprites/index.js'

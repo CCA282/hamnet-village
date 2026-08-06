@@ -1,7 +1,6 @@
 import * as C from '../constants/index.js'
 import { game, harvest } from '../store.js'
 
-const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by)
 const ICON_MAP = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries' }
 const RESOURCES = ['wood', 'fish', 'stone', 'berries']
 
