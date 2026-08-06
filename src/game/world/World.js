@@ -1,0 +1,153 @@
+import * as C from '../constants/index.js'
+import { game } from '../store.js'
+
+import { playerMethods }   from './players.js'
+import { menuMethods }     from './menu.js'
+import { actionMethods }   from './actions.js'
+import { resourceMethods } from './resources.js'
+import { cartMethods }     from './carts.js'
+import { buildingMethods } from './buildings.js'
+import { particleMethods } from './particles.js'
+import { natureMethods }   from './nature.js'
+import { cameraMethods }   from './camera.js'
+import { hintMethods }     from './hints.js'
+import { rendererMethods } from './renderer.js'
+
+const TWO_PI = Math.PI * 2
+
+export class World {
+  constructor() {
+    this._nextId = 1
+    this.players = []
+
+    this.trees = C.TREES.map(([x, y]) => ({ x, y, hp: C.TREE_HP, maxHp: C.TREE_HP, regrow: 0, shake: 0 }))
+    this.fishSpots = C.FISH_SPOTS_Y.map((y) => ({
+      x: C.riverCenterX(y) - C.RIVER.halfWidth - 6, y, cd: 0,
+      jumpTimer: 2 + Math.random() * 4, jumping: false, jumpT: 0,
+    }))
+    this.stoneSpots  = [...C.ROCKS, ...C.STONE_SPOTS].map(([x, y]) => ({ x, y, hp: C.STONE_HP, maxHp: C.STONE_HP, regrow: 0 }))
+    this.berryBushes = [...C.BUSHES, ...C.BERRY_SPOTS].map(([x, y]) => ({ x, y, hp: C.BERRY_HP, maxHp: C.BERRY_HP, regrow: 0 }))
+
+    this.grassTufts = this._scatterGrass(120)
+    this.flowers = []
+    this.deer = []
+    this.birdTimer = 6
+    this.particles = []
+
+    this.fireflies = Array.from({ length: 24 }, () => ({
+      x: 40 + Math.random() * (C.WORLD_W - 200),
+      y: 60 + Math.random() * (C.WORLD_H - 160),
+      phase: Math.random() * TWO_PI,
+      spd: 0.5 + Math.random(),
+    }))
+
+    this.prodTimers = { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0 }
+    this.carts = []
+
+    this.cam = { x: C.VILLAGE.x, y: C.VILLAGE.y, zoom: 1 }
+    this.camView = { left: 0, top: 0, zoom: 1 }
+    this.canvasW = C.VIEW_W
+    this.canvasH = C.VIEW_H
+
+    this.menuNavTimer = 0
+    this._lastDt = 0
+    this.time = 0
+  }
+
+  setCanvasSize(w, h) { this.canvasW = w; this.canvasH = h }
+
+  _scatterGrass(n) {
+    const out = []
+    let tries = 0
+    while (out.length < n && tries < n * 8) {
+      tries++
+      const x = 16 + Math.random() * (C.WORLD_W - 40)
+      const y = 24 + Math.random() * (C.WORLD_H - 48)
+      if (this._inWater(x, y)) continue
+      if (Math.hypot(x - C.VILLAGE.x, y - C.VILLAGE.y) < C.VILLAGE.r) continue
+      out.push({ x, y })
+    }
+    return out
+  }
+
+  _inWater(x, y) { return x >= C.riverCenterX(y) - C.RIVER.halfWidth }
+
+  update(dt, input) {
+    this._lastDt = dt
+    this.time += dt
+    game.timeOfDay = (game.timeOfDay + dt / C.DAY_LENGTH) % 1
+
+    this.handleJoins(input)
+    this.handleDisconnects(input)
+
+    const speed = C.BASE_SPEED + game.upgrades.speed * C.SPEED_PER_UPGRADE
+
+    for (const p of this.players) {
+      p.spawn = Math.max(0, p.spawn - dt)
+      const st = this.inputFor(input, p)
+
+      if (game.menuOpen && game.menuOpener === p.id) { this.handleMenu(p, st); continue }
+      if (p.frozen) continue
+
+      let mx = st.mx, my = st.my
+      const mag = Math.hypot(mx, my)
+      if (mag > 1) { mx /= mag; my /= mag }
+      p.moving = mag > 0.05
+      if (p.moving) {
+        if (mx < -0.1) p.facing = -1
+        else if (mx > 0.1) p.facing = 1
+        p.walkPhase += dt * 10
+        let nx = p.x + mx * speed * dt
+        let ny = p.y + my * speed * dt
+        nx = Math.max(8, Math.min(C.WORLD_W - 8, nx))
+        ny = Math.max(18, Math.min(C.WORLD_H - 10, ny))
+        const bank = C.riverCenterX(ny) - C.RIVER.halfWidth - 2
+        if (nx > bank) nx = bank
+        p.x = nx; p.y = ny
+      }
+
+      if (Math.hypot(p.x - C.VILLAGE.x, p.y - C.VILLAGE.y) < C.VILLAGE.r + 8) {
+        this.depositPlayerInventory(p)
+      }
+
+      p.target = this.computeTarget(p)
+      p.harvestCd = Math.max(0, p.harvestCd - dt)
+
+      if (!game.menuOpen) {
+        if (st.action) this.doAction(p, true)
+        else if (st.actionHeld && p.harvestCd <= 0) this.doAction(p, false)
+      }
+    }
+
+    while (this.carts.length < game.upgrades.charrette) this.createCart()
+
+    this.updateHint()
+    this.updateCarts(dt)
+    this.updateBuildings(dt)
+    this.updateTrees(dt)
+    this.updateFish(dt)
+    this.updateStone(dt)
+    this.updateNature(dt)
+    this.updateDeer(dt)
+    this.updateBirds(dt)
+    this.updateParticles(dt)
+    this.emitCampfire(dt)
+    this.updateCamera(dt)
+  }
+}
+
+// Compose all modules onto World prototype
+Object.assign(
+  World.prototype,
+  playerMethods,
+  menuMethods,
+  actionMethods,
+  resourceMethods,
+  cartMethods,
+  buildingMethods,
+  particleMethods,
+  natureMethods,
+  cameraMethods,
+  hintMethods,
+  rendererMethods,
+)

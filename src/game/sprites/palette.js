@@ -1,0 +1,15 @@
+export const C = {
+  green_d: '#3f6b34', green: '#5a9146', green_l: '#77b85e',
+  trunk: '#6b4a2f', trunk_d: '#4a3320',
+  bush_d: '#4e7d3e', bush: '#68a04f', berry: '#d9544d',
+  rock: '#a7a9b0', rock_d: '#7d7f86', rock_l: '#c6c8ce',
+  wood: '#b5895a', wood_d: '#8a6640', wood_l: '#d0a878',
+  wall: '#efe0c4', wall_d: '#d8c39c',
+  roof: '#c0655a', roof_d: '#9e4d45',
+  roofb: '#6f9aa6', roofb_d: '#517681',
+  roofbrown: '#8a5a3a', roofbrown_d: '#6a4229',
+  door: '#5a3d27', glass: '#bfe3ef',
+  fire_y: '#ffd24d', fire_o: '#f0872f', fire_r: '#e0532f',
+  deer: '#b08050', deer_d: '#8a6038', spot: '#e8d3b0',
+  water: '#5ba3c7', water_d: '#3d7fa6',
+}

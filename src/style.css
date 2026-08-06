@@ -1,0 +1,42 @@
+/* Petit Hameau — style global, ambiance cozy */
+:root {
+  --cozy-bg: #2c3a2e;
+  --cozy-panel: #f4ead5;
+  --cozy-panel-dark: #e3d3b2;
+  --cozy-ink: #4a3a2a;
+  --cozy-ink-soft: #7a6a55;
+  --cozy-gold: #d9a441;
+  --cozy-green: #6a9b57;
+  --cozy-shadow: rgba(40, 30, 20, 0.25);
+  font-family: 'Segoe UI', 'Helvetica Neue', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--cozy-bg);
+  color: var(--cozy-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Rendu pixel-art net */
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
