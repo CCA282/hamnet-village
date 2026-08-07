@@ -8,11 +8,18 @@ const RESOURCES = ['wood', 'fish', 'stone', 'berries', 'meteorite']
 export const cartMethods = {
   createCart() {
     const idx = this.carts.length
+    const V = C.VILLAGE
+    // Spawn south of village, within CART_DEPOSIT_RANGE and in front of fortification walls (depth y+53)
+    const spots = [
+      { x: V.x - 20, y: V.y + 53 },
+      { x: V.x + 20, y: V.y + 53 },
+      { x: V.x,      y: V.y + 56 },
+    ]
+    const pos = spots[idx] ?? { x: V.x - 20 + idx * 14, y: V.y + 55 }
     this.carts.push({
       id: this._nextId++,
-      x: C.VILLAGE.x - 58 + idx * 18,
-      y: C.VILLAGE.y + 22 + idx * 6,
-      inventory: { wood: 0, fish: 0, stone: 0, berries: 0 },
+      x: pos.x, y: pos.y,
+      inventory: { wood: 0, fish: 0, stone: 0, berries: 0, meteorite: 0 },
       following: null,
     })
   },
