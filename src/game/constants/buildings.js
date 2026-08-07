@@ -75,4 +75,22 @@ export const BUILDINGS = {
       transporter_speed: { name: '🚀 Vitesse transporteur',  desc: 'Augmente la vitesse du transporteur',     costs: [{ wood: 20, stone: 8 }, { wood: 50, stone: 20 }, { wood: 120, stone: 50 }], max: 3 },
     },
   },
+  astronomy: {
+    name: "Tour d'astronomie",
+    sprite: 'astronomy',
+    cost: { wood: 60, stone: 50, meteorite: 5 },
+    produces: 'meteorite',
+    amount: 1,
+    interval: 25,
+    storageMax: 5,
+    requiresLevel: 4,
+    hint: 'Collecte les météorites automatiquement',
+    upgrades: {
+      storage:           { name: '📦 Réserve agrandie',       desc: 'Double la capacité de stockage',          costs: [{ meteorite: 3 }, { meteorite: 6 }, { meteorite: 12 }],                                        max: 3 },
+      speed:             { name: '⚡ Captation accélérée',    desc: 'Réduit le temps de captation de 25 %',    costs: [{ meteorite: 2, stone: 15 }, { meteorite: 5, stone: 30 }, { meteorite: 10, stone: 60 }],        max: 3 },
+      transporter:       { name: '🚗 Transporteur auto',      desc: 'Charrette automatique bâtiment↔village',  costs: [{ meteorite: 4, wood: 30 }],                                                                   max: 1 },
+      transporter_speed: { name: '🚀 Vitesse transporteur',   desc: 'Augmente la vitesse du transporteur',     costs: [{ stone: 15, wood: 20 }, { stone: 30, wood: 50 }, { stone: 60, wood: 120 }],                   max: 3 },
+      observatory:       { name: '🔭 Observatoire',           desc: 'Ajoute un télescope — chaque niveau enrichit la vue',  costs: [{ meteorite: 5 }, { meteorite: 10 }, { meteorite: 20 }],                          max: 3 },
+    },
+  },
 }

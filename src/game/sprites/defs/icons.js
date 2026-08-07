@@ -17,4 +17,8 @@ export const iconDefs = {
     rows: ['.r.r.', 'rRrRr', '.rRr.', '..g..'],
     pal: { r: '#c83844', R: '#f05060', g: '#3a6030' },
   },
+  icon_meteorite: {
+    rows: ['.mM.', 'mMMm', '.mMm', '..m.'],
+    pal: { M: '#d8c8ff', m: '#7850c8' },
+  },
 }

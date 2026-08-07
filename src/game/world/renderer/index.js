@@ -64,7 +64,7 @@ const coreMethods = {
       const def = C.BUILDINGS[spot.building]
       if (game.buildings[spot.building] > 0 || game.villageLevel < def.requiresLevel) continue
       const near = this.players.some((p) => Math.hypot(p.x - spot.x, p.y - spot.y) < nearDist)
-      this.drawBuildMarker(ctx, spot, t, near)
+      this.drawBuildMarker(ctx, spot, t, near)  // draws marker + ghost, NOT the cost panel
     }
 
     // Halos under entities
@@ -79,6 +79,14 @@ const coreMethods = {
     for (const tr of this.trees) ents.push({ y: tr.y, draw: () => this.drawTree(ctx, tr) })
     for (const b of this.berryBushes) ents.push({ y: b.y, draw: () => this.drawBerryBush(ctx, b) })
     for (const s of this.stoneSpots) ents.push({ y: s.y, draw: () => this.drawStoneSpot(ctx, s) })
+    for (const m of this.meteoriteSpots) {
+      if (m.hp > 0 || m.impactT > 0) ents.push({ y: m.y, draw: () => this.drawMeteorite(ctx, m) })
+    }
+    const astSpot = C.BUILD_SPOTS.find((s) => s.building === 'astronomy')
+    if (astSpot && game.buildings.astronomy > 0 && (game.buildingUpgrades.astronomy?.observatory || 0) > 0) {
+      const tx = astSpot.x + C.TELESCOPE_OFFSET_X, ty = astSpot.y
+      ents.push({ y: ty, draw: () => this.drawTelescope(ctx, tx, ty, t) })
+    }
     for (const d of this.deer) ents.push({ y: d.y, draw: () => this.drawDeer(ctx, d) })
     for (const h of this.villageHouses()) ents.push({ y: h.y, draw: () => this.drawBottom(ctx, sprite(h.sprite), h.x, h.y) })
     if (game.villageLevel >= 3) {
@@ -100,6 +108,14 @@ const coreMethods = {
     for (const p of this.players) ents.push({ y: p.y, draw: () => this.drawPlayer(ctx, p) })
     ents.sort((a, b) => a.y - b.y)
     for (const e of ents) e.draw()
+
+    // Build cost panels drawn after all entities so they appear on top
+    for (const spot of C.BUILD_SPOTS) {
+      const def = C.BUILDINGS[spot.building]
+      if (game.buildings[spot.building] > 0 || game.villageLevel < def.requiresLevel) continue
+      const near = this.players.some((p) => Math.hypot(p.x - spot.x, p.y - spot.y) < nearDist)
+      if (near) this.drawBuildCostPanel(ctx, spot, def, t)
+    }
 
     this.renderParticles(ctx)
 

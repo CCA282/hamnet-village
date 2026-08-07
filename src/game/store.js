@@ -1,20 +1,21 @@
 import { reactive } from 'vue'
-import { UPGRADES, BUILDINGS, GLOBAL_CAPACITY_LEVELS } from './constants/index.js'
+import { UPGRADES, BUILDINGS, GLOBAL_CAPACITY_LEVELS, PLAYER_INVENTORY_MAX, CART_CAPACITY } from './constants/index.js'
 
 export const game = reactive({
   wood: 0,
   fish: 0,
   stone: 0,
   berries: 0,
+  meteorite: 0,
   villageLevel: 1,
   totalHarvested: 0,
 
-  buildings: { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0 },
+  buildings: { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 },
 
   upgrades: {
     speed: 0, harvest_yield: 0, harvest_speed: 0, village_lvl: 0,
     hache: 0, pioche: 0, fishing_rod: 0, faucille: 0,
-    charrette: 0,
+    charrette: 0, bag_size: 0, cart_size: 0,
     cap_wood: 0, cap_fish: 0, cap_stone: 0, cap_berries: 0,
   },
 
@@ -24,6 +25,7 @@ export const game = reactive({
     fishinghut:  { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 },
     quarry:      { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 },
     garden:      { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 },
+    astronomy:   { storage: 0, speed: 0, transporter: 0, transporter_speed: 0, observatory: 0 },
   },
 
   players: [],
@@ -41,6 +43,8 @@ export const game = reactive({
 
   timeOfDay: 0.15,
   hint: '',
+  hintOverride: '',
+  telescopeOpen: false,
   devMode: false,
 })
 
@@ -87,11 +91,19 @@ export function globalCap(res) {
   return GLOBAL_CAPACITY_LEVELS[Math.min(lvl, GLOBAL_CAPACITY_LEVELS.length - 1)]
 }
 
+export function effectiveInventoryMax() {
+  return PLAYER_INVENTORY_MAX + game.upgrades.bag_size * 3
+}
+
+export function effectiveCartCapacity() {
+  return CART_CAPACITY + game.upgrades.cart_size * 9
+}
+
 const TAB_KEYS = [
   ['village_lvl'],
   ['hache', 'pioche', 'fishing_rod', 'faucille'],
   ['charrette', 'cap_wood', 'cap_fish', 'cap_stone', 'cap_berries'],
-  ['speed', 'harvest_yield', 'harvest_speed'],
+  ['speed', 'harvest_yield', 'harvest_speed', 'bag_size', 'cart_size'],
 ]
 export { TAB_KEYS }
 
@@ -130,7 +142,7 @@ export function buyBuildingUpgrade(buildingId, type) {
 export function buildingMenuEntries(buildingId) {
   const def = BUILDINGS[buildingId]
   if (!def?.upgrades) return []
-  const types = ['storage', 'speed', 'transporter', 'transporter_speed']
+  const types = ['storage', 'speed', 'transporter', 'transporter_speed', 'observatory']
   return types
     .filter((t) => def.upgrades[t])
     .filter((t) => t !== 'transporter_speed' || game.buildingUpgrades[buildingId]?.transporter > 0)
@@ -181,21 +193,22 @@ export function fmt(n) {
 }
 
 export function resetGame() {
-  game.wood = 0; game.fish = 0; game.stone = 0; game.berries = 0
+  game.wood = 0; game.fish = 0; game.stone = 0; game.berries = 0; game.meteorite = 0
   game.villageLevel = 1; game.totalHarvested = 0
-  Object.assign(game.buildings, { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0 })
+  Object.assign(game.buildings, { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 })
   Object.assign(game.upgrades, {
     speed: 0, harvest_yield: 0, harvest_speed: 0, village_lvl: 0,
     hache: 0, pioche: 0, fishing_rod: 0, faucille: 0,
-    charrette: 0,
+    charrette: 0, bag_size: 0, cart_size: 0,
     cap_wood: 0, cap_fish: 0, cap_stone: 0, cap_berries: 0,
   })
   for (const id of Object.keys(game.buildingUpgrades)) {
     Object.assign(game.buildingUpgrades[id], { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 })
   }
+  game.buildingUpgrades.astronomy.observatory = 0
   game.players = []
   game.menuOpen = false; game.menuOpener = null; game.menuIndex = 0; game.menuTab = 0
   game.buildingMenuOpen = false; game.buildingMenuBuilding = null
   game.buildingMenuIndex = 0; game.buildingMenuOpener = null
-  game.timeOfDay = 0.15; game.hint = ''; game.devMode = false
+  game.timeOfDay = 0.15; game.hint = ''; game.hintOverride = ''; game.telescopeOpen = false; game.devMode = false
 }

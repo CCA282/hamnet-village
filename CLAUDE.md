@@ -12,6 +12,8 @@ npm run preview  # serve the production build locally
 
 No linter or test runner is configured yet. After any change, run `npm run build` to catch import/syntax errors.
 
+**After completing each feature, ask the user if they want to commit before moving on.**
+
 ## Architecture
 
 **Petit Hameau** is a cozy local co-op idle game. Pure frontend: Vue 3 + Vite. The game loop runs on a `<canvas>`, UI overlays are Vue components.

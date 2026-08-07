@@ -20,21 +20,30 @@ let saveMsgTimer = null
 
 async function triggerSave() {
   if (netState.mode === 'local') {
-    const id = netState.worldId || crypto.randomUUID()
+    const id = netState.worldId || (crypto.randomUUID?.() ?? (Date.now().toString(36) + Math.random().toString(36).slice(2)))
     netState.worldId = id
-    saveLocal(engine.world, id, netState.worldName)
-    flash('Sauvegardé !')
+    try {
+      saveLocal(engine.world, id, netState.worldName)
+      flash('Sauvegardé !')
+    } catch {
+      flash('Erreur de sauvegarde')
+    }
   } else if (netState.mode === 'host') {
-    const id = await saveServer(engine.world, netState.worldId, netState.worldName)
-    if (id) { netState.worldId = id; flash('Sauvegardé sur le serveur !') }
-    else flash('Erreur de sauvegarde')
+    try {
+      const id = await saveServer(engine.world, netState.worldId, netState.worldName)
+      if (id) { netState.worldId = id; flash('Sauvegardé sur le serveur !') }
+      else flash('Erreur de sauvegarde')
+    } catch {
+      flash('Erreur de sauvegarde')
+    }
   }
 }
 
 function flash(msg) {
   saveMsg.value = msg
+  game.hintOverride = msg
   clearTimeout(saveMsgTimer)
-  saveMsgTimer = setTimeout(() => { saveMsg.value = '' }, 2500)
+  saveMsgTimer = setTimeout(() => { saveMsg.value = ''; game.hintOverride = '' }, 2500)
 }
 
 const canSave = computed(() => netState.mode === 'local' || netState.mode === 'host')
@@ -71,12 +80,15 @@ const timeIcon = computed(() => {
   return '🌙'
 })
 
-const icons = reactive({ wood: '', fish: '', stone: '', berries: '' })
+const meteoritesVisible = computed(() => game.villageLevel >= 3 || game.meteorite > 0)
+
+const icons = reactive({ wood: '', fish: '', stone: '', berries: '', meteorite: '' })
 onMounted(() => {
-  icons.wood    = spriteUrl('icon_wood')
-  icons.fish    = spriteUrl('icon_fish')
-  icons.stone   = spriteUrl('icon_stone')
-  icons.berries = spriteUrl('icon_berries')
+  icons.wood       = spriteUrl('icon_wood')
+  icons.fish       = spriteUrl('icon_fish')
+  icons.stone      = spriteUrl('icon_stone')
+  icons.berries    = spriteUrl('icon_berries')
+  icons.meteorite  = spriteUrl('icon_meteorite')
 })
 </script>
 
@@ -103,6 +115,10 @@ onMounted(() => {
         <img v-if="icons.berries" :src="icons.berries" class="ic-sprite" />
         <span class="val">{{ fmt(game.berries) }}<span class="cap">/{{ globalCap('berries') }}</span></span>
         <span v-if="berriesPerSec" class="rate">+{{ berriesPerSec }}/s</span>
+      </div>
+      <div class="res" v-if="meteoritesVisible">
+        <img v-if="icons.meteorite" :src="icons.meteorite" class="ic-sprite" />
+        <span class="val">{{ fmt(game.meteorite) }}</span>
       </div>
     </div>
 

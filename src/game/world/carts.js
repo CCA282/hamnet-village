@@ -1,9 +1,9 @@
 import * as C from '../constants/index.js'
-import { harvest } from '../store.js'
+import { harvest, effectiveCartCapacity } from '../store.js'
 
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by)
-const ICON_MAP = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries' }
-const RESOURCES = ['wood', 'fish', 'stone', 'berries']
+const ICON_MAP = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries', meteorite: 'icon_meteorite' }
+const RESOURCES = ['wood', 'fish', 'stone', 'berries', 'meteorite']
 
 export const cartMethods = {
   createCart() {
@@ -44,7 +44,7 @@ export const cartMethods = {
             const qty = pl.inventory[res] || 0
             if (qty <= 0) continue
             const cartTotal = RESOURCES.reduce((s, r) => s + (cart.inventory[r] || 0), 0)
-            const space = C.CART_CAPACITY - cartTotal
+            const space = effectiveCartCapacity() - cartTotal
             if (space <= 0) continue
             const transferred = Math.min(qty, space)
             cart.inventory[res] = (cart.inventory[res] || 0) + transferred

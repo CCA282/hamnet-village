@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { netState } from '../net/netState.js'
 import { connect, send, onMsg, disconnect, wsUrl } from '../net/socket.js'
-import { serializeWorld, applyWorldState, listLocalSaves, loadLocal, listServerSaves, loadServer } from '../net/sync.js'
+import { serializeWorld, applyWorldState, listLocalSaves, loadLocal, deleteLocal, listServerSaves, loadServer } from '../net/sync.js'
 import { engine } from '../game/engine.js'
 import { game } from '../game/store.js'
 
@@ -20,6 +20,8 @@ const worldNameInput = ref('')
 // ── Navigation ────────────────────────────────────────────────────────────────
 
 function goHome() { step.value = 'home'; error.value = ''; displayCode.value = ''; busy.value = false }
+
+watch(() => netState.mode, (v) => { if (v === null) goHome() })
 function goLocal() { step.value = 'local'; error.value = ''; localSaves.value = listLocalSaves() }
 function goNewLocal() { step.value = 'new_local'; worldNameInput.value = ''; error.value = '' }
 function goNewOnline() { step.value = 'new_online'; worldNameInput.value = ''; error.value = '' }
@@ -50,6 +52,11 @@ async function loadLocalWorld(id) {
   const data = loadLocal(id)
   if (!data) { error.value = 'Sauvegarde introuvable'; return }
   startLocal(data)
+}
+
+function removeLocalSave(id) {
+  deleteLocal(id)
+  localSaves.value = listLocalSaves()
 }
 
 // ── Online host mode ──────────────────────────────────────────────────────────
@@ -251,14 +258,13 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
       <div class="card" v-else-if="step === 'saves_local'">
         <h2>Charger une partie</h2>
         <div class="savelist" v-if="localSaves.length">
-          <button
-            v-for="s in localSaves" :key="s.id"
-            class="save-entry"
-            @pointerdown="loadLocalWorld(s.id)"
-          >
-            <span class="sname">{{ s.name }}</span>
-            <span class="sdate">{{ s.savedAt ? new Date(s.savedAt).toLocaleDateString('fr') : '' }}</span>
-          </button>
+          <div v-for="s in localSaves" :key="s.id" class="save-row">
+            <button class="save-entry" @pointerdown="loadLocalWorld(s.id)">
+              <span class="sname">{{ s.name }}</span>
+              <span class="sdate">{{ s.savedAt ? new Date(s.savedAt).toLocaleDateString('fr') : '' }}</span>
+            </button>
+            <button class="save-delete" @pointerdown.stop="removeLocalSave(s.id)" title="Supprimer">🗑</button>
+          </div>
         </div>
         <p class="empty" v-else>Aucune sauvegarde</p>
         <p class="err" v-if="error">{{ error }}</p>
@@ -486,8 +492,13 @@ h2 { margin: 0; font-size: 20px; }
   overflow-y: auto;
 }
 
+.save-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
 .save-entry {
-  width: 100%;
+  flex: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -504,6 +515,19 @@ h2 { margin: 0; font-size: 20px; }
 .save-entry:hover { border-color: var(--cozy-gold); }
 .sname { font-size: 14px; }
 .sdate { font-size: 11px; color: var(--cozy-ink-soft); }
+.save-delete {
+  flex-shrink: 0;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--cozy-ink-soft);
+  transition: border-color 0.1s, color 0.1s;
+  line-height: 1;
+}
+.save-delete:hover { border-color: #c05040; color: #c05040; }
 
 .empty { color: var(--cozy-ink-soft); font-size: 14px; }
 .loading { color: var(--cozy-ink-soft); }

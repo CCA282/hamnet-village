@@ -41,4 +41,18 @@ export const upgradesTools = {
     repeatable: true,
     max: 4,
   },
+  bag_size: {
+    name: '🎒 Grand sac',
+    desc: 'Agrandit le sac à dos de tous les joueurs (+3 emplacements)',
+    costs: [{ wood: 15 }, { wood: 25, stone: 10 }, { wood: 40, stone: 20 }],
+    repeatable: true,
+    max: 3,
+  },
+  cart_size: {
+    name: '🛒 Grande charrette',
+    desc: 'Augmente la capacité de stockage de la charrette (+9 emplacements)',
+    costs: [{ wood: 20, stone: 8 }, { wood: 35, stone: 18 }, { wood: 60, stone: 30 }],
+    repeatable: true,
+    max: 3,
+  },
 }

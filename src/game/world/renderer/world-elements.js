@@ -106,7 +106,6 @@ export const worldElementMethods = {
     ctx.setLineDash([])
     const alpha = near ? 0.45 + Math.sin(t * 3) * 0.08 : 0.22 + Math.sin(t * 3) * 0.05
     this.drawBottom(ctx, sprite(def.sprite), spot.x, spot.y, { alpha })
-    if (near) this.drawBuildCostPanel(ctx, spot, def, t)
     ctx.restore()
   },
 
@@ -134,10 +133,10 @@ export const worldElementMethods = {
     ctx.fillStyle = 'rgba(244,234,213,0.7)'
     ctx.fillText(def.name, spot.x, panY + 6)
 
-    const sprKey = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries' }
+    const sprKey = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries', meteorite: 'icon_meteorite' }
     let x = panX + 5
     for (const [res, amount] of entries) {
-      this.drawBottom(ctx, sprite(sprKey[res]), x + iconW / 2, panY + panH - 3, { scale: 0.75 })
+      if (sprKey[res]) this.drawBottom(ctx, sprite(sprKey[res]), x + iconW / 2, panY + panH - 3, { scale: 0.75 })
       ctx.font = '5px monospace'
       ctx.textAlign = 'left'
       ctx.fillStyle = (game[res] || 0) >= amount ? '#7de87a' : '#f07878'
@@ -145,6 +144,37 @@ export const worldElementMethods = {
       x += colW
     }
     ctx.textAlign = 'left'
+  },
+
+  drawMeteorite(ctx, m) {
+    if (m.impactT > 0) {
+      const progress = 1 - m.impactT / 1.8
+      const radius = 6 + progress * 12
+      ctx.save()
+      ctx.globalAlpha = (1 - progress) * 0.75
+      ctx.fillStyle = '#d8c8ff'
+      ctx.beginPath()
+      ctx.arc(m.x, m.y - 4, radius, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+    }
+    if (m.hp > 0) {
+      this.drawShadow(ctx, m.x, m.y, 10)
+      this.drawBottom(ctx, sprite('meteorite'), m.x, m.y)
+    }
+  },
+
+  drawTelescope(ctx, x, y, t) {
+    this.drawShadow(ctx, x, y, 8)
+    this.drawBottom(ctx, sprite('telescope'), x, y)
+    const glow = 0.12 + Math.sin(t * 2.5) * 0.06
+    ctx.save()
+    ctx.globalAlpha = glow
+    ctx.fillStyle = '#a090ff'
+    ctx.beginPath()
+    ctx.arc(x + 3, y - 8, 5, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
   },
 
   drawFishZone(ctx, f, t) {

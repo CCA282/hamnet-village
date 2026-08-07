@@ -10,8 +10,9 @@ import { buildingMethods } from './buildings.js'
 import { particleMethods } from './particles.js'
 import { natureMethods }   from './nature.js'
 import { cameraMethods }   from './camera.js'
-import { hintMethods }     from './hints.js'
-import { rendererMethods } from './renderer/index.js'
+import { hintMethods }      from './hints.js'
+import { meteoriteMethods } from './meteorites.js'
+import { rendererMethods }  from './renderer/index.js'
 
 const TWO_PI = Math.PI * 2
 
@@ -42,7 +43,11 @@ export class World {
       spd: 0.5 + Math.random(),
     }))
 
-    this.prodTimers = { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0 }
+    this.meteoriteSpots = []
+    this._meteoriteTimer = 0
+    this._nextMeteoriteSpawn = 20
+
+    this.prodTimers = { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 }
     this.buildingInventories = {}
     for (const [id, def] of Object.entries(C.BUILDINGS)) {
       this.buildingInventories[id] = { [def.produces]: 0 }
@@ -162,6 +167,7 @@ export class World {
     while (this.carts.length < game.upgrades.charrette) this.createCart()
 
     this.updateHint()
+    this.updateMeteorites(dt)
     this.updateCarts(dt)
     this.updateBuildings(dt)
     this.updateBuildingCollection()
@@ -191,5 +197,6 @@ Object.assign(
   natureMethods,
   cameraMethods,
   hintMethods,
+  meteoriteMethods,
   rendererMethods,
 )

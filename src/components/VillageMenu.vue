@@ -49,12 +49,15 @@ const entries = computed(() => TAB_KEYS[game.menuTab].map((key) => {
 
 const opener = computed(() => game.players.find((p) => p.id === game.menuOpener))
 
-const icons = reactive({ wood: '', fish: '', stone: '', berries: '' })
+const meteoritesVisible = computed(() => game.villageLevel >= 3 || game.meteorite > 0)
+
+const icons = reactive({ wood: '', fish: '', stone: '', berries: '', meteorite: '' })
 onMounted(() => {
-  icons.wood    = spriteUrl('icon_wood')
-  icons.fish    = spriteUrl('icon_fish')
-  icons.stone   = spriteUrl('icon_stone')
-  icons.berries = spriteUrl('icon_berries')
+  icons.wood       = spriteUrl('icon_wood')
+  icons.fish       = spriteUrl('icon_fish')
+  icons.stone      = spriteUrl('icon_stone')
+  icons.berries    = spriteUrl('icon_berries')
+  icons.meteorite  = spriteUrl('icon_meteorite')
 })
 
 function click(i, key) {
@@ -103,6 +106,10 @@ function close() {
           <span class="stock-item">
             <img v-if="icons.berries" :src="icons.berries" class="res-icon" />
             {{ Math.floor(game.berries) }}<span class="scap">/{{ globalCap('berries') }}</span>
+          </span>
+          <span class="stock-item" v-if="meteoritesVisible">
+            <img v-if="icons.meteorite" :src="icons.meteorite" class="res-icon" />
+            {{ Math.floor(game.meteorite) }}
           </span>
           <span class="dev-badge" v-if="game.devMode">⚡ DEV</span>
         </div>

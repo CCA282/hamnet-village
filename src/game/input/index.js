@@ -14,10 +14,11 @@ export class Input {
     this.touch = { mx: 0, my: 0, down: false, _wasDown: false }
 
     window.addEventListener('keydown', (e) => {
-      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+      const inInput = e.target.matches('input, textarea, [contenteditable]')
+      if (!inInput && ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
         e.preventDefault()
       }
-      this.keysDown.add(e.code)
+      if (!inInput) this.keysDown.add(e.code)
     })
     window.addEventListener('keyup',  (e) => this.keysDown.delete(e.code))
     window.addEventListener('blur',   ()  => { this.keysDown.clear(); this.mouseHeld = false })

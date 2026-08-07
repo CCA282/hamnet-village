@@ -1,6 +1,6 @@
 import * as C from '../../constants/index.js'
 import { sprite, characterSprite } from '../../sprites/index.js'
-import { game } from '../../store.js'
+import { game, effectiveInventoryMax } from '../../store.js'
 
 const TWO_PI = Math.PI * 2
 
@@ -55,8 +55,9 @@ export const entityMethods = {
       const bx = Math.round(p.x - barW / 2), by = Math.round(y - 9)
       ctx.fillStyle = 'rgba(0,0,0,0.45)'
       ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2)
-      ctx.fillStyle = invTotal >= C.PLAYER_INVENTORY_MAX ? '#e05050' : '#f0d050'
-      ctx.fillRect(bx, by, Math.round(barW * invTotal / C.PLAYER_INVENTORY_MAX), barH)
+      const invMax = effectiveInventoryMax()
+      ctx.fillStyle = invTotal >= invMax ? '#e05050' : '#f0d050'
+      ctx.fillRect(bx, by, Math.round(barW * invTotal / invMax), barH)
     }
     ctx.textAlign = 'left'
   },

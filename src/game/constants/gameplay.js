@@ -25,3 +25,7 @@ export const PLAYER_INVENTORY_MAX = 9
 export const CART_CAPACITY = 18
 export const CART_DEPOSIT_RANGE = 58
 export const GLOBAL_CAPACITY_LEVELS = [25, 50, 75, 100, 200, 500, 1000]
+
+export const METEORITE_HP = 3
+export const METEORITE_SPAWN_INTERVAL = 35
+export const METEORITE_MAX_ON_MAP = 4

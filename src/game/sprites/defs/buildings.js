@@ -131,4 +131,32 @@ export const buildingDefs = {
       p: '#8a5c34', e: '#7a5030',
     },
   },
+  astronomy: {
+    rows: [
+      '....DDDDDD....',
+      '...DDDDDDDD...',
+      '..DDDDDDDDDD..',
+      '..ddddddddddd.',
+      '..AAAAAAAAAA..',
+      '..AaAAAAAAAAA.',
+      '..AAAAAAAAAA..',
+      '..AaAAAAAAAAA.',
+      '..AAAAAAAAAA..',
+      '..ssssssssss..',
+      '...ssssssss...',
+    ],
+    pal: { D: '#a090e8', d: '#6858b0', A: '#7868c0', a: '#c0b0f0', s: '#38304a' },
+  },
+  telescope: {
+    rows: [
+      '......TT',
+      '.....TTT',
+      '....TTTT',
+      '...ttttt',
+      '....t...',
+      '...ttt..',
+      '..t.t...',
+    ],
+    pal: { T: '#d0d0e0', t: '#606078' },
+  },
 }

@@ -1,7 +1,7 @@
 import * as C from '../constants/index.js'
-import { game, harvest, effectiveInterval, effectiveStorageMax } from '../store.js'
+import { game, harvest, effectiveInterval, effectiveStorageMax, effectiveInventoryMax, effectiveCartCapacity } from '../store.js'
 
-const ICON_MAP = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries' }
+const ICON_MAP = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries', meteorite: 'icon_meteorite' }
 
 export const buildingMethods = {
   updateBuildings(dt) {
@@ -35,7 +35,7 @@ export const buildingMethods = {
         if (available <= 0) break
         if (Math.hypot(pl.x - spot.x, pl.y - spot.y) > C.INTERACT_RANGE + 4) continue
         const invTotal = Object.values(pl.inventory).reduce((a, b) => a + b, 0)
-        const space = C.PLAYER_INVENTORY_MAX - invTotal
+        const space = effectiveInventoryMax() - invTotal
         if (space <= 0) continue
         const take = Math.min(inv[res], space)
         inv[res] -= take
@@ -47,7 +47,7 @@ export const buildingMethods = {
         if ((inv[res] || 0) <= 0) break
         if (Math.hypot(cart.x - spot.x, cart.y - spot.y) > C.INTERACT_RANGE + 4) continue
         const cartTotal = Object.values(cart.inventory).reduce((a, b) => a + b, 0)
-        const space = C.CART_CAPACITY - cartTotal
+        const space = effectiveCartCapacity() - cartTotal
         if (space <= 0) continue
         const take = Math.min(inv[res], space)
         inv[res] -= take

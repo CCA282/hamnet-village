@@ -1,5 +1,7 @@
 import * as C from '../constants/index.js'
-import { game, build, canBuild, buyBuildingUpgrade } from '../store.js'
+import { game, build, canBuild, buyBuildingUpgrade, effectiveInventoryMax } from '../store.js'
+
+const ASTRONOMY_SPOT = () => C.BUILD_SPOTS.find((s) => s.building === 'astronomy')
 
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by)
 
@@ -91,9 +93,28 @@ export const actionMethods = {
       }
     }
 
-    if (best && ['chop', 'fish', 'mine', 'pick'].includes(best.kind)) {
+    for (const m of this.meteoriteSpots) {
+      if (m.hp <= 0 || m.impactT > 0) continue
+      const d = dist(p.x, p.y, m.x, m.y)
+      if (d < bestD) {
+        bestD = d
+        best = { kind: 'meteorite', meteor: m, x: m.x, y: m.y - 12, haloX: m.x, haloY: m.y, ok: true }
+      }
+    }
+
+    const astSpot = ASTRONOMY_SPOT()
+    if (astSpot && game.buildings.astronomy > 0 && (game.buildingUpgrades.astronomy?.observatory || 0) > 0) {
+      const tx = astSpot.x + C.TELESCOPE_OFFSET_X, ty = astSpot.y
+      const d = dist(p.x, p.y, tx, ty)
+      if (d < bestD) {
+        bestD = d
+        best = { kind: 'telescope', x: tx, y: ty - 10, haloX: tx, haloY: ty, ok: true }
+      }
+    }
+
+    if (best && ['chop', 'fish', 'mine', 'pick', 'meteorite'].includes(best.kind)) {
       const invTotal = Object.values(p.inventory).reduce((a, b) => a + b, 0)
-      if (invTotal >= C.PLAYER_INVENTORY_MAX) { best.inventoryFull = true; best.ok = false }
+      if (invTotal >= effectiveInventoryMax()) { best.inventoryFull = true; best.ok = false }
     }
 
     return best
@@ -181,6 +202,21 @@ export const actionMethods = {
       p.harvestCd = this.effectiveHarvestCd()
       this.spawnIcon('icon_berries', b.x, b.y - 10)
       if (b.hp <= 0) b.regrow = C.BERRY_REGROW
+      return
+    }
+    if (t.kind === 'meteorite') {
+      if (!t.ok) return
+      const m = t.meteor
+      if (m.hp <= 0) return
+      m.hp--
+      if (!this.harvestToPlayer(p, 'meteorite', 1)) { m.hp++; return }
+      p.harvestCd = this.effectiveHarvestCd()
+      this.spawnIcon('icon_meteorite', m.x, m.y - 10)
+      this.spawnRipple(m.x, m.y)
+      return
+    }
+    if (t.kind === 'telescope') {
+      if (isInitial) game.telescopeOpen = true
       return
     }
   },

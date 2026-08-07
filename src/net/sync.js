@@ -6,7 +6,7 @@ const BUILDING_ICON_MAP = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_s
 export function serializeWorld(world, { includeSpotsState = false } = {}) {
   const snap = {
     // Reactive state
-    wood: game.wood, fish: game.fish, stone: game.stone, berries: game.berries,
+    wood: game.wood, fish: game.fish, stone: game.stone, berries: game.berries, meteorite: game.meteorite,
     villageLevel: game.villageLevel,
     totalHarvested: game.totalHarvested,
     timeOfDay: game.timeOfDay,
@@ -44,6 +44,10 @@ export function serializeWorld(world, { includeSpotsState = false } = {}) {
       loadTimer: at.loadTimer, stateTimer: at.stateTimer,
     })),
 
+    meteoriteSpots: world.meteoriteSpots.map((m) => ({ id: m.id, x: m.x, y: m.y, hp: m.hp, maxHp: m.maxHp, impactT: m.impactT })),
+    _meteoriteTimer: world._meteoriteTimer,
+    _nextMeteoriteSpawn: world._nextMeteoriteSpawn,
+
     _nextId: world._nextId,
     devMode: game.devMode,
   }
@@ -64,6 +68,7 @@ export function applyWorldState(world, snap) {
   if (snap.fish !== undefined) game.fish = snap.fish
   if (snap.stone !== undefined) game.stone = snap.stone
   if (snap.berries !== undefined) game.berries = snap.berries
+  if (snap.meteorite !== undefined) game.meteorite = snap.meteorite
   if (snap.villageLevel !== undefined) game.villageLevel = snap.villageLevel
   if (snap.totalHarvested !== undefined) game.totalHarvested = snap.totalHarvested
   if (snap.timeOfDay !== undefined) game.timeOfDay = snap.timeOfDay
@@ -107,6 +112,10 @@ export function applyWorldState(world, snap) {
       if (!c) { world.carts.push({ ...sc }) } else { Object.assign(c, sc) }
     }
   }
+
+  if (snap.meteoriteSpots) world.meteoriteSpots = snap.meteoriteSpots.map((m) => ({ ...m }))
+  if (snap._meteoriteTimer !== undefined) world._meteoriteTimer = snap._meteoriteTimer
+  if (snap._nextMeteoriteSpawn !== undefined) world._nextMeteoriteSpawn = snap._nextMeteoriteSpawn
 
   if (snap.devMode !== undefined) game.devMode = snap.devMode
 
@@ -193,6 +202,11 @@ export function saveLocal(world, id, name) {
 
 export function loadLocal(id) {
   try { return JSON.parse(localStorage.getItem('hamnet_world_' + id)) } catch { return null }
+}
+
+export function deleteLocal(id) {
+  localStorage.removeItem('hamnet_world_' + id)
+  lsSave(lsIndex().filter((e) => e.id !== id))
 }
 
 // ── Server save (HTTP) ────────────────────────────────────────────────────────

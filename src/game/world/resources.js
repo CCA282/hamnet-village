@@ -1,8 +1,8 @@
 import * as C from '../constants/index.js'
-import { game, harvest } from '../store.js'
+import { game, harvest, effectiveInventoryMax } from '../store.js'
 
-const ICON_MAP = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries' }
-const RESOURCES = ['wood', 'fish', 'stone', 'berries']
+const ICON_MAP = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries', meteorite: 'icon_meteorite' }
+const RESOURCES = ['wood', 'fish', 'stone', 'berries', 'meteorite']
 
 export const resourceMethods = {
   effectiveHarvestCd() {
@@ -11,7 +11,7 @@ export const resourceMethods = {
 
   harvestToPlayer(p, res, amount) {
     const total = Object.values(p.inventory).reduce((a, b) => a + b, 0)
-    if (total >= C.PLAYER_INVENTORY_MAX) return false
+    if (total >= effectiveInventoryMax()) return false
     p.inventory[res] = (p.inventory[res] || 0) + amount
     game.totalHarvested += amount
     return true
