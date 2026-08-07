@@ -22,8 +22,8 @@ export const iconDefs = {
     pal: { M: '#d8c8ff', m: '#7850c8' },
   },
   icon_pioche: {
-    rows: ['....Mm', '...Mmm', '.mMm..', 'mMm...', 'mm....', 'm.....'],
-    pal: { M: '#d8c8ff', m: '#7850c8' },
+    rows: ['....TT', '...Tt.', '.tTt..', 'tTt...', 'ht....', 'h.....'],
+    pal: { T: '#d0d0d8', t: '#888898', h: '#c09850' },
   },
   icon_heart: {
     rows: ['.r.r.', 'rrrrr', '.rrr.', '..r..'],

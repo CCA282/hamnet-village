@@ -9,7 +9,7 @@ export const effectMethods = {
   renderParticles(ctx) {
     for (const p of this.particles) {
       const a = clamp01(p.life / p.maxLife)
-      if (['icon_wood', 'icon_fish', 'icon_stone', 'icon_berries', 'icon_meteorite'].includes(p.type)) {
+      if (p.type.startsWith('icon_')) {
         this.drawBottom(ctx, sprite(p.type), p.x, p.y, { alpha: a })
       } else if (p.type === 'leaf') {
         ctx.globalAlpha = a; ctx.fillStyle = p.col

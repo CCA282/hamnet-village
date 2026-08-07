@@ -49,11 +49,8 @@ export class World {
     this._nextMeteoriteSpawn = 20
 
     // Noisette / Noisetier (spawns at level 4, fixed position in forest)
-    this.noisette = { x: 215, y: 351, stage: 0, growing: false, growTimer: 0 }
-    this.squirrels = [
-      { x: 229, y: 357, state: 'wandering', timer: 0, targetX: 229, targetY: 357, followTimer: 0, facing: 1 },
-      { x: 201, y: 357, state: 'wandering', timer: 0, targetX: 201, targetY: 357, followTimer: 0, facing: -1 },
-    ]
+    this.noisette = { x: 215, y: 351, stage: 0, growing: false, growTimer: 0, squirrelSpawnTimers: null }
+    this.squirrels = []
 
     this.prodTimers = { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 }
     this.buildingInventories = {}
