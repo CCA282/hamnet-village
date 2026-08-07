@@ -6,7 +6,9 @@ const TWO_PI = Math.PI * 2
 
 export const entityMethods = {
   drawCart(ctx, cart) {
-    const s = sprite('cart')
+    const cartLvl = game.upgrades.cart_size || 0
+    const cartKey = cartLvl >= 3 ? 'cart_3' : cartLvl >= 1 ? 'cart_2' : 'cart'
+    const s = sprite(cartKey)
     this.drawShadow(ctx, cart.x, cart.y, s.width)
     this.drawBottom(ctx, s, cart.x, cart.y)
 
@@ -63,7 +65,9 @@ export const entityMethods = {
   },
 
   drawAutoTransporter(ctx, at) {
-    const s = sprite('cart')
+    const speedLvl = game.buildingUpgrades[at.buildingId]?.transporter_speed || 0
+    const cartKey = speedLvl >= 3 ? 'cart_3' : speedLvl >= 1 ? 'cart_2' : 'cart'
+    const s = sprite(cartKey)
     this.drawShadow(ctx, at.x, at.y, s.width)
     this.drawBottom(ctx, s, at.x, at.y, { flip: at.facing < 0 })
 

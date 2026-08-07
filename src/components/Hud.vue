@@ -118,7 +118,7 @@ onMounted(() => {
       </div>
       <div class="res" v-if="meteoritesVisible">
         <img v-if="icons.meteorite" :src="icons.meteorite" class="ic-sprite" />
-        <span class="val">{{ fmt(game.meteorite) }}</span>
+        <span class="val">{{ fmt(game.meteorite) }}<span class="cap">/{{ globalCap('meteorite') }}</span></span>
       </div>
     </div>
 

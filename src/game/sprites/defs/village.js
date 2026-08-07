@@ -71,12 +71,34 @@ export const villageDefs = {
   cart: {
     rows: [
       'h..TTTTTTT.',
-      'h..TcccccT.',
-      'h..TcccccT.',
-      '...TTTTTTTT',
+      'h..TbbbbBT.',
+      'h..TbbbbBT.',
+      '...TtTtTtTT',
       '....T....T.',
       '...wWw..wWw',
     ],
-    pal: { T: '#cb8a42', c: '#3e2010', h: '#8a5c34', w: '#2c1c0c', W: '#4a3010' },
+    pal: { T: '#cb8a42', t: '#a86a2e', b: '#4a2c10', B: '#3a1e08', h: '#8a5c34', w: '#2c1c0c', W: '#4a3010' },
+  },
+  cart_2: {
+    rows: [
+      'h..TTTTTTT.',
+      'h..TbPbPbT.',
+      'h..TbPbPbT.',
+      '...TtTtTtTT',
+      '....T....T.',
+      '...wWw..wWw',
+    ],
+    pal: { T: '#d09540', t: '#a87830', b: '#5a3818', P: '#6e4820', h: '#8a5c34', w: '#2c1c0c', W: '#4a3010' },
+  },
+  cart_3: {
+    rows: [
+      'h..MMMMMMM.',
+      'h..MbbbbMM.',
+      'h..MbbbbMM.',
+      '...MMMMMMMM',
+      '....M....M.',
+      '...wWW..wWW',
+    ],
+    pal: { M: '#8898b0', b: '#3e2c10', h: '#8a5c34', w: '#1e1020', W: '#5878a0' },
   },
 }

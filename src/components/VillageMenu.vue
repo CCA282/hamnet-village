@@ -29,10 +29,8 @@ function setTab(i) {
   game.menuIndex = 0
 }
 
-const observatoryUnlocked = computed(() => (game.buildingUpgrades.astronomy?.observatory || 0) > 0)
-
 const entries = computed(() => TAB_KEYS[game.menuTab]
-  .filter((key) => key !== 'cap_meteorite' || observatoryUnlocked.value)
+  .filter((key) => key !== 'cap_meteorite' || game.villageLevel >= 3)
   .map((key) => {
   const def = UPGRADES[key]
   const level = game.upgrades[key]

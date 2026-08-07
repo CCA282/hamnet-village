@@ -20,12 +20,13 @@ const showMenu = computed(() => {
   return false
 })
 
-const icons = reactive({ wood: '', fish: '', stone: '', berries: '' })
+const icons = reactive({ wood: '', fish: '', stone: '', berries: '', meteorite: '' })
 onMounted(() => {
-  icons.wood    = spriteUrl('icon_wood')
-  icons.fish    = spriteUrl('icon_fish')
-  icons.stone   = spriteUrl('icon_stone')
-  icons.berries = spriteUrl('icon_berries')
+  icons.wood       = spriteUrl('icon_wood')
+  icons.fish       = spriteUrl('icon_fish')
+  icons.stone      = spriteUrl('icon_stone')
+  icons.berries    = spriteUrl('icon_berries')
+  icons.meteorite  = spriteUrl('icon_meteorite')
 })
 
 const buildingDef = computed(() => BUILDINGS[game.buildingMenuBuilding])

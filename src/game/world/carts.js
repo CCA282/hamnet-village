@@ -1,5 +1,5 @@
 import * as C from '../constants/index.js'
-import { harvest, effectiveCartCapacity } from '../store.js'
+import { game, harvest, effectiveCartCapacity } from '../store.js'
 
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by)
 const ICON_MAP = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries', meteorite: 'icon_meteorite' }
@@ -30,7 +30,8 @@ export const cartMethods = {
           if (d > 0) {
             const tx = carrier.x + (dx / d) * targetDist
             const ty = carrier.y + (dy / d) * targetDist
-            const spd = Math.min(1, dt * (carrier.moving ? 9 : 5))
+            const cartSpeed = 5 + (game.upgrades.cart_size || 0) * 1.7
+          const spd = Math.min(1, dt * cartSpeed * (carrier.moving ? 1 : 0.55))
             cart.x += (tx - cart.x) * spd
             cart.y += (ty - cart.y) * spd
           }

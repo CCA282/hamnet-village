@@ -24,4 +24,20 @@ export const upgradesBonus = {
     repeatable: true,
     max: 3,
   },
+  bag_size: {
+    name: '🎒 Grand sac',
+    desc: '+3 objets dans l\'inventaire de chaque joueur',
+    baseCost: { wood: 20, stone: 8 },
+    growth: 2.0,
+    repeatable: true,
+    max: 3,
+  },
+  cart_size: {
+    name: '🛒 Grande charrette',
+    desc: '+9 objets dans la charrette',
+    baseCost: { wood: 25, stone: 12 },
+    growth: 2.0,
+    repeatable: true,
+    max: 3,
+  },
 }
