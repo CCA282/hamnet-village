@@ -50,12 +50,48 @@ export const worldElementMethods = {
     this.drawShadow(ctx, spot.x, spot.y, s.width)
     this.drawBottom(ctx, s, spot.x, spot.y - bob * 0.4)
 
-    // Storage upgrade dots (1 dot per level, left side)
+    // Storage upgrade: wooden crates stacked on the right side of the building
     const storageLvl = game.buildingUpgrades[spot.building]?.storage || 0
     if (storageLvl > 0) {
-      ctx.fillStyle = '#f4ead5'
+      const cw = 8, ch = 5, gap = 1
+      const lid  = '#e0bc70'
+      const body = '#b8832c'
+      const plank = '#7a5018'
+      const resColor = {
+        wood: '#c07828', fish: '#2890cc', stone: '#8a96a2',
+        berries: '#c82828', meteorite: '#7848c8',
+      }[def.produces] ?? '#808080'
+      const cx = Math.round(spot.x + s.width / 2 + 3)
+
       for (let i = 0; i < storageLvl; i++) {
-        ctx.fillRect(Math.round(spot.x - s.width / 2 - 4), Math.round(spot.y - s.height / 2 - i * 4), 2, 2)
+        const isTop = i === storageLvl - 1
+        const cy = Math.round(spot.y) - ch - i * (ch + gap)
+
+        if (isTop) {
+          // Open crate: top rim + resource color visible inside
+          ctx.fillStyle = lid
+          ctx.fillRect(cx + 1, cy, cw - 2, 1)                   // top rim
+          ctx.fillRect(cx, cy + 1, 1, 1)                        // left rim
+          ctx.fillRect(cx + cw - 1, cy + 1, 1, 1)               // right rim
+          ctx.fillStyle = resColor
+          ctx.fillRect(cx + 1, cy + 1, cw - 2, 1)               // resource inside
+          ctx.fillStyle = body
+          ctx.fillRect(cx, cy + 2, cw, ch - 3)                  // front face
+          ctx.fillStyle = plank
+          ctx.fillRect(cx + 2, cy + 2, 1, ch - 3)               // plank line
+          ctx.fillRect(cx + 5, cy + 2, 1, ch - 3)               // plank line
+          ctx.fillRect(cx + 1, cy + ch - 1, cw - 2, 1)          // bottom edge
+        } else {
+          // Closed crate
+          ctx.fillStyle = lid
+          ctx.fillRect(cx, cy, cw, 1)                            // lid
+          ctx.fillStyle = body
+          ctx.fillRect(cx, cy + 1, cw, ch - 2)                  // body
+          ctx.fillStyle = plank
+          ctx.fillRect(cx + 2, cy + 1, 1, ch - 2)               // plank line
+          ctx.fillRect(cx + 5, cy + 1, 1, ch - 2)               // plank line
+          ctx.fillRect(cx + 1, cy + ch - 1, cw - 2, 1)          // bottom edge
+        }
       }
     }
 
