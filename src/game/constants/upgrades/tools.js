@@ -17,6 +17,13 @@ export const upgradesTools = {
     repeatable: false,
     max: 1,
   },
+  pioche_stellaire: {
+    name: '⛏️ Pioche stellaire',
+    desc: 'Améliore la pioche — débloque la construction du puits',
+    costs: [{ stone: 40, meteorite: 8 }],
+    repeatable: false,
+    max: 1,
+  },
   fishing_rod: {
     name: '🎣 Canne à pêche',
     desc: 'Permet à tout le monde de pêcher',

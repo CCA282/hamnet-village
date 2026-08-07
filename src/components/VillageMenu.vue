@@ -30,7 +30,11 @@ function setTab(i) {
 }
 
 const entries = computed(() => TAB_KEYS[game.menuTab]
-  .filter((key) => key !== 'cap_meteorite' || game.villageLevel >= 3)
+  .filter((key) => {
+    if (key === 'cap_meteorite') return game.villageLevel >= 3
+    if (key === 'pioche_stellaire') return (game.upgrades.pioche || 0) >= 1
+    return true
+  })
   .map((key) => {
   const def = UPGRADES[key]
   const level = game.upgrades[key]

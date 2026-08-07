@@ -14,7 +14,7 @@ export const game = reactive({
 
   upgrades: {
     speed: 0, harvest_yield: 0, harvest_speed: 0, village_lvl: 0,
-    hache: 0, pioche: 0, fishing_rod: 0, faucille: 0,
+    hache: 0, pioche: 0, pioche_stellaire: 0, fishing_rod: 0, faucille: 0,
     charrette: 0, bag_size: 0, cart_size: 0,
     cap_wood: 0, cap_fish: 0, cap_stone: 0, cap_berries: 0, cap_meteorite: 0,
   },
@@ -101,7 +101,7 @@ export function effectiveCartCapacity() {
 
 const TAB_KEYS = [
   ['village_lvl'],
-  ['hache', 'pioche', 'fishing_rod', 'faucille'],
+  ['hache', 'pioche', 'pioche_stellaire', 'fishing_rod', 'faucille'],
   ['charrette', 'cap_wood', 'cap_fish', 'cap_stone', 'cap_berries', 'cap_meteorite'],
   ['speed', 'harvest_yield', 'harvest_speed', 'bag_size', 'cart_size'],
 ]
@@ -198,7 +198,7 @@ export function resetGame() {
   Object.assign(game.buildings, { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 })
   Object.assign(game.upgrades, {
     speed: 0, harvest_yield: 0, harvest_speed: 0, village_lvl: 0,
-    hache: 0, pioche: 0, fishing_rod: 0, faucille: 0,
+    hache: 0, pioche: 0, pioche_stellaire: 0, fishing_rod: 0, faucille: 0,
     charrette: 0, bag_size: 0, cart_size: 0,
     cap_wood: 0, cap_fish: 0, cap_stone: 0, cap_berries: 0, cap_meteorite: 0,
   })
