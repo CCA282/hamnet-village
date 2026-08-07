@@ -21,4 +21,8 @@ export const iconDefs = {
     rows: ['.mM.', 'mMMm', '.mMm', '..m.'],
     pal: { M: '#d8c8ff', m: '#7850c8' },
   },
+  icon_pioche: {
+    rows: ['....Mm', '...Mmm', '.mMm..', 'mMm...', 'mm....', 'm.....'],
+    pal: { M: '#d8c8ff', m: '#7850c8' },
+  },
 }

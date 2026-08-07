@@ -188,10 +188,12 @@ export const worldElementMethods = {
     const iconW = 9, colW = iconW + 20
     ctx.font = '5px monospace'
     const nameW = ctx.measureText(def.name).width
-    const reqLabel = reqUpg ? `${def.requiresUpgrade.replace(/_/g, ' ')} ${hasReqUpg ? '1/1' : '0/1'}` : ''
-    const reqLabelW = reqLabel ? ctx.measureText(reqLabel).width + 8 : 0
+    const reqCounter = reqUpg ? (hasReqUpg ? '1/1' : '0/1') : ''
+    const reqIconW = reqUpg ? 6 : 0
+    const reqCounterW = reqCounter ? ctx.measureText(reqCounter).width : 0
+    const reqRowW = reqUpg ? reqIconW + 4 + reqCounterW + 8 : 0
     const panH = reqUpg ? 28 : 18
-    const panW = Math.max(entries.length * colW + 10, nameW + 12, reqLabelW)
+    const panW = Math.max(entries.length * colW + 10, nameW + 12, reqRowW)
     const panX = spot.x - panW / 2
     const panY = spot.y - 50 + Math.sin(t * 2.5) * 0.8
 
@@ -223,10 +225,13 @@ export const worldElementMethods = {
     }
 
     if (reqUpg) {
+      const iconSpr = sprite('icon_pioche')
+      const iconY = panY + panH - 2
+      this.drawBottom(ctx, iconSpr, panX + 4 + reqIconW / 2, iconY)
       ctx.font = '5px monospace'
       ctx.textAlign = 'left'
       ctx.fillStyle = hasReqUpg ? '#7de87a' : '#f07878'
-      ctx.fillText(reqLabel, panX + 4, panY + panH - 4)
+      ctx.fillText(reqCounter, panX + 4 + reqIconW + 3, panY + panH - 4)
     }
     ctx.textAlign = 'left'
   },
