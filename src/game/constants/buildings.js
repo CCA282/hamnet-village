@@ -8,8 +8,8 @@
 
 export const BUILDINGS = {
   lumberjack: {
-    name: 'Cabane de bûcheron',
-    sprite: 'cabin',
+    name: 'Atelier de bûcheron',
+    sprite: 'workshop',
     cost: { wood: 15 },
     produces: 'wood',
     amount: 1,
