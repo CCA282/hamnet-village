@@ -88,7 +88,12 @@ const isDayTime = computed(() => {
 })
 
 function skipTime() {
-  game.timeOfDay = isDayTime.value ? 0.58 : 0.12
+  const goingToNight = isDayTime.value
+  game.timeOfDay = goingToNight ? 0.58 : 0.12
+  if (goingToNight && game.villageLevel >= 3) {
+    engine.world?._spawnMeteorite()
+    engine.world?._spawnMeteorite()
+  }
   const n = engine.world?.noisette
   if (n && n.growing && n.growTimer > 0) n.growTimer = 0
 }
