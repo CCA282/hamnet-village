@@ -35,6 +35,7 @@ export const hintMethods = {
           else hint = n.stage === 0 ? '💧 Arrosez la noisette pour la faire pousser' : '💧 Arrosez le noisetier'
         }
         else if (t.kind === 'telescope') hint = '🔭 Observer le ciel'
+        else if (t.kind === 'squirrel') hint = t.ok ? '🐿️ Caresser l\'écureuil' : '🐿️ L\'écureuil vous suit…'
       }
       p.hint = hint
     }

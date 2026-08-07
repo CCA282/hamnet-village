@@ -26,6 +26,19 @@ export const particleMethods = {
     }
   },
 
+  spawnHearts(x, y) {
+    for (let i = 0; i < 4; i++) {
+      this.particles.push({
+        type: 'icon_heart',
+        x: x + (Math.random() - 0.5) * 10,
+        y: y - i * 3,
+        vx: (Math.random() - 0.5) * 8,
+        vy: -14 - Math.random() * 6,
+        life: 1.2, maxLife: 1.2,
+      })
+    }
+  },
+
   spawnRipple(x, y) {
     this.particles.push({ type: 'ripple', x, y, life: 0.8, maxLife: 0.8, r: 1 })
   },

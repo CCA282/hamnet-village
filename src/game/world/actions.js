@@ -111,6 +111,13 @@ export const actionMethods = {
         const spriteKey = n.stage === 0 ? 'noisette' : `noisetier_${n.stage}`
         best = { kind: 'noisette', noisette: n, x: n.x, y: n.y - 14, haloX: n.x, haloY: n.y, ok: canWater, spriteKey }
       }
+      for (const sq of this.squirrels) {
+        const d = dist(p.x, p.y, sq.x, sq.y)
+        if (d < bestD) {
+          bestD = d
+          best = { kind: 'squirrel', squirrel: sq, x: sq.x, y: sq.y - 10, haloX: sq.x, haloY: sq.y, ok: sq.state !== 'following' }
+        }
+      }
     }
 
     const astSpot = ASTRONOMY_SPOT()
@@ -249,6 +256,10 @@ export const actionMethods = {
     }
     if (t.kind === 'telescope') {
       if (isInitial) game.telescopeOpen = true
+      return
+    }
+    if (t.kind === 'squirrel') {
+      if (isInitial && t.ok) this.petSquirrel(t.squirrel)
       return
     }
   },

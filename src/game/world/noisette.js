@@ -82,6 +82,12 @@ export const noisetteMethods = {
     }
   },
 
+  petSquirrel(sq) {
+    sq.state = 'following'
+    sq.followTimer = 8
+    this.spawnHearts(sq.x, sq.y - 6)
+  },
+
   waterNoisette(p) {
     const n = this.noisette
     p.water = false
