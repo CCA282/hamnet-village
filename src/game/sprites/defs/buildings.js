@@ -247,4 +247,40 @@ export const buildingDefs = {
     ],
     pal: { T: '#d0d0e0', t: '#606078' },
   },
+
+  // Niveau 2 — tube plus long, bague dorée
+  telescope_2: {
+    rows: [
+      '.......TT.',
+      '......LTTT',
+      '.....LTTTT',
+      '....LTTTTT',
+      '...ttttttt',
+      '....t.....',
+      '...tttt...',
+      '..t....t..',
+      '..t....t..',
+      '.ttttttt..',
+    ],
+    pal: { T: '#d0d0e0', t: '#606078', L: '#d4a840' },
+  },
+
+  // Niveau 3 — grand télescope monté sur trépied, oculaire doré
+  telescope_3: {
+    rows: [
+      '.......LTT..',
+      '......LTTTT.',
+      '.....LTTTTT.',
+      '....LLTTTTT.',
+      '...tttttttttt',
+      '....t........',
+      '...ttttt.....',
+      '..t.....t....',
+      '..t.....t....',
+      '..t.....t....',
+      '.tttttttttt..',
+      '..LL.....LL..',
+    ],
+    pal: { T: '#d0d0e0', t: '#606078', L: '#d4a840' },
+  },
 }

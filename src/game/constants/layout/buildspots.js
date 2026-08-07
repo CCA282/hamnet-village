@@ -8,4 +8,4 @@ export const BUILD_SPOTS = [
   { id: 'puits',      x: 415, y: 265, building: 'puits' },
 ]
 
-export const TELESCOPE_OFFSET_X = 26
+export const TELESCOPE_OFFSET_X = 40

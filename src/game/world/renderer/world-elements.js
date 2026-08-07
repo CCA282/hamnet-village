@@ -402,14 +402,19 @@ export const worldElementMethods = {
   },
 
   drawTelescope(ctx, x, y, t) {
-    this.drawShadow(ctx, x, y, 8)
-    this.drawBottom(ctx, sprite('telescope'), x, y)
+    const obsLvl = game.buildingUpgrades.astronomy?.observatory || 0
+    const sKey = obsLvl >= 3 ? 'telescope_3' : obsLvl >= 2 ? 'telescope_2' : 'telescope'
+    const s = sprite(sKey)
+    this.drawShadow(ctx, x, y, s.width * 0.7)
+    this.drawBottom(ctx, s, x, y)
     const glow = 0.12 + Math.sin(t * 2.5) * 0.06
+    const glowColor = obsLvl >= 3 ? '#ffe088' : obsLvl >= 2 ? '#c0a8ff' : '#a090ff'
+    const glowR = 4 + obsLvl * 1.5
     ctx.save()
     ctx.globalAlpha = glow
-    ctx.fillStyle = '#a090ff'
+    ctx.fillStyle = glowColor
     ctx.beginPath()
-    ctx.arc(x + 3, y - 8, 5, 0, Math.PI * 2)
+    ctx.arc(x + 4, y - 8 - obsLvl, glowR, 0, Math.PI * 2)
     ctx.fill()
     ctx.restore()
   },
