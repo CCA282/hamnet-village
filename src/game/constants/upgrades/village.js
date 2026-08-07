@@ -8,7 +8,7 @@ export const upgradesVillage = {
     ],
     costs: [
       { wood: 40, fish: 25 },
-      { wood: 60, fish: 20, stone: 30 },
+      { wood: 60, berries: 20, stone: 30 },
       { wood: 80, stone: 60, meteorite: 8 },
     ],
     repeatable: true,

@@ -68,7 +68,7 @@ export const buildingMethods = {
         const spot = C.BUILD_SPOTS.find((s) => s.building === id)
         this.autoTransporters.push({
           buildingId: id,
-          x: spot.x, y: spot.y,
+          x: spot.x + C.AT_DOCK_X_OFFSET, y: spot.y,
           inventory: {},
           state: 'loading',
           waitTimer: 0,
@@ -123,7 +123,8 @@ export const buildingMethods = {
           if (total <= 0) at.state = 'to_building'
         }
       } else if (at.state === 'to_building') {
-        const dx = spot.x - at.x, dy = spot.y - at.y
+        const dockX = spot.x + C.AT_DOCK_X_OFFSET
+        const dx = dockX - at.x, dy = spot.y - at.y
         const d = Math.hypot(dx, dy)
         if (d > 4) {
           const mv = Math.min(d, speed * dt)
@@ -131,7 +132,7 @@ export const buildingMethods = {
           at.y += (dy / d) * mv
           at.facing = dx < 0 ? -1 : 1
         } else {
-          at.x = spot.x; at.y = spot.y
+          at.x = dockX; at.y = spot.y
           at.state = 'loading'
           at.waitTimer = 0
         }

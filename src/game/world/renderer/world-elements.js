@@ -47,6 +47,25 @@ export const worldElementMethods = {
   drawBuilding(ctx, spot, def, t) {
     const s = sprite(def.sprite)
     const bob = Math.sin(t * 3 + spot.x) * 0.5
+
+    // Transporter dock (drawn first, appears behind building and cart)
+    if ((game.buildingUpgrades[spot.building]?.transporter || 0) > 0) {
+      const dockX = Math.round(spot.x + C.AT_DOCK_X_OFFSET)
+      const dockY = Math.round(spot.y)
+      // Ground patch
+      ctx.fillStyle = 'rgba(150,110,55,0.38)'
+      ctx.fillRect(dockX - 7, dockY - 2, 14, 3)
+      // Roof beam (lighter top, darker underside)
+      ctx.fillStyle = '#a06828'
+      ctx.fillRect(dockX - 8, dockY - 11, 16, 2)
+      ctx.fillStyle = '#7a5018'
+      ctx.fillRect(dockX - 8, dockY - 10, 16, 1)
+      // Posts
+      ctx.fillStyle = '#7a5018'
+      ctx.fillRect(dockX - 8, dockY - 10, 2, 10)
+      ctx.fillRect(dockX + 6, dockY - 10, 2, 10)
+    }
+
     this.drawShadow(ctx, spot.x, spot.y, s.width)
     this.drawBottom(ctx, s, spot.x, spot.y - bob * 0.4)
 

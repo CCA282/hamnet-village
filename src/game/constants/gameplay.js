@@ -29,3 +29,6 @@ export const GLOBAL_CAPACITY_LEVELS = [25, 50, 75, 100, 200, 500, 1000]
 export const METEORITE_HP = 3
 export const METEORITE_SPAWN_INTERVAL = 35
 export const METEORITE_MAX_ON_MAP = 4
+
+// Offset x du dock (remise) du transporteur auto par rapport au centre du bâtiment
+export const AT_DOCK_X_OFFSET = -22
