@@ -183,10 +183,15 @@ export const worldElementMethods = {
 
   drawBuildCostPanel(ctx, spot, def, t) {
     const entries = Object.entries(def.cost)
+    const reqUpg = def.requiresUpgrade
+    const hasReqUpg = !reqUpg || (game.upgrades[reqUpg] || 0) >= 1
     const iconW = 9, colW = iconW + 20
     ctx.font = '5px monospace'
     const nameW = ctx.measureText(def.name).width
-    const panW = Math.max(entries.length * colW + 10, nameW + 12), panH = 18
+    const reqLabel = reqUpg ? `${def.requiresUpgrade.replace(/_/g, ' ')} ${hasReqUpg ? '1/1' : '0/1'}` : ''
+    const reqLabelW = reqLabel ? ctx.measureText(reqLabel).width + 8 : 0
+    const panH = reqUpg ? 28 : 18
+    const panW = Math.max(entries.length * colW + 10, nameW + 12, reqLabelW)
     const panX = spot.x - panW / 2
     const panY = spot.y - 50 + Math.sin(t * 2.5) * 0.8
 
@@ -207,13 +212,21 @@ export const worldElementMethods = {
 
     const sprKey = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries', meteorite: 'icon_meteorite' }
     let x = panX + 5
+    const resRowY = reqUpg ? panY + 16 : panY + panH - 3
     for (const [res, amount] of entries) {
-      if (sprKey[res]) this.drawBottom(ctx, sprite(sprKey[res]), x + iconW / 2, panY + panH - 3, { scale: 0.75 })
+      if (sprKey[res]) this.drawBottom(ctx, sprite(sprKey[res]), x + iconW / 2, resRowY, { scale: 0.75 })
       ctx.font = '5px monospace'
       ctx.textAlign = 'left'
       ctx.fillStyle = (game[res] || 0) >= amount ? '#7de87a' : '#f07878'
-      ctx.fillText(`${Math.floor(game[res] || 0)}/${amount}`, x + iconW + 1, panY + panH - 4)
+      ctx.fillText(`${Math.floor(game[res] || 0)}/${amount}`, x + iconW + 1, resRowY - 1)
       x += colW
+    }
+
+    if (reqUpg) {
+      ctx.font = '5px monospace'
+      ctx.textAlign = 'left'
+      ctx.fillStyle = hasReqUpg ? '#7de87a' : '#f07878'
+      ctx.fillText(reqLabel, panX + 4, panY + panH - 4)
     }
     ctx.textAlign = 'left'
   },

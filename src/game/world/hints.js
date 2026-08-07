@@ -14,7 +14,14 @@ export const hintMethods = {
       if (t) {
         if (t.kind === 'building_occupied') hint = 'Bâtiment occupé par un autre joueur'
         else if (t.kind === 'menu_occupied') hint = 'Village occupé par un autre joueur'
-        else if (t.kind === 'build' && !t.ok) hint = 'Ressources insuffisantes'
+        else if (t.kind === 'build' && !t.ok) {
+          const def = C.BUILDINGS[t.spot.building]
+          if (def.requiresUpgrade && !game.upgrades[def.requiresUpgrade]) {
+            hint = `Amélioration requise : ${C.UPGRADES[def.requiresUpgrade]?.name ?? def.requiresUpgrade}`
+          } else {
+            hint = 'Ressources insuffisantes'
+          }
+        }
         else if (t.kind === 'chop') hint = t.inventoryFull ? 'Sac plein ! Approchez la charrette pour déposer 🛒' : t.ok ? '' : "Besoin d'une hache 🪓"
         else if (t.kind === 'fish') hint = t.inventoryFull ? 'Sac plein ! Approchez la charrette pour déposer 🛒' : t.ok ? '' : "Besoin d'une canne à pêche 🎣"
         else if (t.kind === 'mine') hint = t.inventoryFull ? 'Sac plein ! Approchez la charrette pour déposer 🛒' : t.ok ? '' : "Besoin d'une pioche ⛏️"
