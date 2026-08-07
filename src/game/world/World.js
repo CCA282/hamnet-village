@@ -11,13 +11,14 @@ import { particleMethods } from './particles.js'
 import { natureMethods }   from './nature.js'
 import { cameraMethods }   from './camera.js'
 import { hintMethods }     from './hints.js'
-import { rendererMethods } from './renderer.js'
+import { rendererMethods } from './renderer/index.js'
 
 const TWO_PI = Math.PI * 2
 
 export class World {
   constructor() {
     this._nextId = 1
+    this._nextPlayerNum = 1
     this.players = []
 
     this.trees = C.TREES.map(([x, y]) => ({ x, y, hp: C.TREE_HP, maxHp: C.TREE_HP, regrow: 0, shake: 0 }))
@@ -42,7 +43,12 @@ export class World {
     }))
 
     this.prodTimers = { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0 }
+    this.buildingInventories = {}
+    for (const [id, def] of Object.entries(C.BUILDINGS)) {
+      this.buildingInventories[id] = { [def.produces]: 0 }
+    }
     this.carts = []
+    this.autoTransporters = []
 
     this.cam = { x: C.VILLAGE.x, y: C.VILLAGE.y, zoom: 1 }
     this.camView = { left: 0, top: 0, zoom: 1 }
@@ -52,9 +58,28 @@ export class World {
     this.menuNavTimer = 0
     this._lastDt = 0
     this.time = 0
+    this._pendingRemoteMenuOpen = null
+    this._pendingRemoteMenuClose = null
   }
 
   setCanvasSize(w, h) { this.canvasW = w; this.canvasH = h }
+
+  // Used by guest mode: only update visuals (camera, particles, nature) — no game logic.
+  updateGuestVisuals(dt) {
+    this._lastDt = dt
+    this.time += dt
+    // Smooth player positions between snapshots
+    const k = Math.min(1, dt * 22)
+    for (const p of this.players) {
+      if (p.targetX !== undefined) { p.x += (p.targetX - p.x) * k; p.y += (p.targetY - p.y) * k }
+    }
+    this.updateNature(dt)
+    this.updateDeer(dt)
+    this.updateBirds(dt)
+    this.updateParticles(dt)
+    this.emitCampfire(dt)
+    this.updateCamera(dt)
+  }
 
   _scatterGrass(n) {
     const out = []
@@ -86,7 +111,13 @@ export class World {
       p.spawn = Math.max(0, p.spawn - dt)
       const st = this.inputFor(input, p)
 
-      if (game.menuOpen && game.menuOpener === p.id) { this.handleMenu(p, st); continue }
+      if (p.source === 'remote') {
+        if (p.isInMenu) { this.handleMenu(p, st); continue }
+        if (p.buildingMenuId !== null) { this.handleBuildingMenu(p, st); continue }
+      } else {
+        if (game.menuOpen && game.menuOpener === p.id) { this.handleMenu(p, st); continue }
+        if (game.buildingMenuOpen && game.buildingMenuOpener === p.id) { this.handleBuildingMenu(p, st); continue }
+      }
       if (p.frozen) continue
 
       let mx = st.mx, my = st.my
@@ -113,9 +144,18 @@ export class World {
       p.target = this.computeTarget(p)
       p.harvestCd = Math.max(0, p.harvestCd - dt)
 
-      if (!game.menuOpen) {
-        if (st.action) this.doAction(p, true)
-        else if (st.actionHeld && p.harvestCd <= 0) this.doAction(p, false)
+      // Remote players have their own per-player menu state (already checked above);
+      // only gate local players on the global game.menuOpen flag.
+      const localMenuBlocking = p.source !== 'remote' && game.menuOpen
+      if (!localMenuBlocking) {
+        if (st.action) {
+          this.doAction(p, true)
+          // Remote input stays true for the full 33ms packet; consume it so
+          // the next host frame doesn't trigger a second action.
+          if (p.source === 'remote' && p.remoteInput) p.remoteInput.action = false
+        } else if (st.actionHeld && p.harvestCd <= 0) {
+          this.doAction(p, false)
+        }
       }
     }
 
@@ -124,6 +164,8 @@ export class World {
     this.updateHint()
     this.updateCarts(dt)
     this.updateBuildings(dt)
+    this.updateBuildingCollection()
+    this.updateAutoTransporters(dt)
     this.updateTrees(dt)
     this.updateFish(dt)
     this.updateStone(dt)

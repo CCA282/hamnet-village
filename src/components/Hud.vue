@@ -1,7 +1,53 @@
 <script setup>
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { game, fmt, effectiveInterval, globalCap } from '../game/store.js'
 import { spriteUrl } from '../game/sprites/index.js'
+import { netState } from '../net/netState.js'
+import { saveLocal, saveServer } from '../net/sync.js'
+import { engine } from '../game/engine.js'
+
+const displayHint = computed(() => {
+  if (netState.mode === 'guest') {
+    const myPlayer = game.players.find((p) => p.id === netState.myPlayerId)
+    return myPlayer?.hint ?? ''
+  }
+  return game.hint
+})
+
+const saveMsg = ref('')
+const showConfirmQuit = ref(false)
+let saveMsgTimer = null
+
+async function triggerSave() {
+  if (netState.mode === 'local') {
+    const id = netState.worldId || crypto.randomUUID()
+    netState.worldId = id
+    saveLocal(engine.world, id, netState.worldName)
+    flash('Sauvegardé !')
+  } else if (netState.mode === 'host') {
+    const id = await saveServer(engine.world, netState.worldId, netState.worldName)
+    if (id) { netState.worldId = id; flash('Sauvegardé sur le serveur !') }
+    else flash('Erreur de sauvegarde')
+  }
+}
+
+function flash(msg) {
+  saveMsg.value = msg
+  clearTimeout(saveMsgTimer)
+  saveMsgTimer = setTimeout(() => { saveMsg.value = '' }, 2500)
+}
+
+const canSave = computed(() => netState.mode === 'local' || netState.mode === 'host')
+
+function confirmQuit() { engine.reset() }
+
+async function copyRoomCode() {
+  if (!netState.roomCode) return
+  try {
+    await navigator.clipboard.writeText(netState.roomCode)
+    flash('Code copié !')
+  } catch { flash(netState.roomCode) }
+}
 
 const woodPerSec = computed(() =>
   game.buildings.lumberjack > 0 ? (1 / effectiveInterval('lumberjack')).toFixed(1) : null,
@@ -64,6 +110,23 @@ onMounted(() => {
     <div class="panel village">
       <span class="lvl">🏡 Village niv. {{ game.villageLevel }}</span>
       <span class="time">{{ timeIcon }}</span>
+      <span v-if="netState.roomCode" class="roomcode" @pointerdown.stop="copyRoomCode" title="Copier le code">🔑 {{ netState.roomCode }}</span>
+      <button v-if="canSave" class="save-btn" @pointerdown.stop="triggerSave" title="Sauvegarder">💾</button>
+      <button class="quit-btn" @pointerdown.stop="showConfirmQuit = true" title="Retour au menu">⏏</button>
+    </div>
+    <transition name="fade">
+      <div class="save-toast" v-if="saveMsg">{{ saveMsg }}</div>
+    </transition>
+
+    <!-- Confirmation quitter -->
+    <div class="confirm-overlay" v-if="showConfirmQuit" @pointerdown.self="showConfirmQuit = false">
+      <div class="confirm-box">
+        <p>Retourner au menu principal ?<br><span class="warn">La partie non sauvegardée sera perdue.</span></p>
+        <div class="confirm-btns">
+          <button @pointerdown="showConfirmQuit = false">Annuler</button>
+          <button class="danger" @pointerdown="confirmQuit">Quitter</button>
+        </div>
+      </div>
     </div>
 
     <!-- Joueurs connectés -->
@@ -78,11 +141,12 @@ onMounted(() => {
 
     <!-- Astuce contextuelle -->
     <transition name="fade">
-      <div class="hint" v-if="game.hint">{{ game.hint }}</div>
+      <div class="hint" v-if="displayHint">{{ displayHint }}</div>
     </transition>
 
-    <!-- Bouton dev mode -->
+    <!-- Bouton dev mode (host et local uniquement) -->
     <button
+      v-if="netState.mode !== 'guest'"
       class="dev-btn"
       :class="{ active: game.devMode }"
       @pointerdown.stop="game.devMode = !game.devMode"
@@ -110,7 +174,7 @@ onMounted(() => {
   align-items: center;
 }
 .resources { top: 16px; left: 16px; }
-.village { top: 16px; right: 16px; gap: 10px; }
+.village { top: 16px; right: 16px; gap: 10px; pointer-events: auto; }
 .players { bottom: 16px; left: 16px; gap: 6px; padding: 6px 8px; }
 
 .res { display: flex; align-items: center; gap: 6px; }
@@ -173,4 +237,81 @@ onMounted(() => {
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.roomcode {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  background: rgba(0,0,0,0.18);
+  border-radius: 8px;
+  padding: 2px 7px;
+  color: var(--cozy-gold);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.roomcode:hover { background: rgba(0,0,0,0.32); }
+
+.save-btn, .quit-btn {
+  pointer-events: auto;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.75;
+  transition: opacity 0.12s, transform 0.1s;
+}
+.save-btn:hover, .quit-btn:hover { opacity: 1; transform: scale(1.15); }
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 8, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  pointer-events: auto;
+}
+.confirm-box {
+  background: var(--cozy-panel);
+  border: 3px solid rgba(0,0,0,0.14);
+  border-radius: 16px;
+  padding: 22px 28px 18px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+  text-align: center;
+  max-width: 300px;
+}
+.confirm-box p { margin: 0 0 16px; font-size: 15px; font-weight: 700; line-height: 1.5; }
+.confirm-box .warn { font-size: 12px; color: #c05040; font-weight: 600; }
+.confirm-btns { display: flex; gap: 10px; justify-content: center; }
+.confirm-btns button {
+  padding: 9px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  background: var(--cozy-panel-dark);
+  color: var(--cozy-ink);
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+}
+.confirm-btns button.danger {
+  background: #c05040;
+  color: #fff;
+}
+
+.save-toast {
+  position: absolute;
+  top: 64px;
+  right: 16px;
+  background: rgba(44, 34, 24, 0.85);
+  color: #f4ead5;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 4px 14px var(--cozy-shadow);
+}
 </style>

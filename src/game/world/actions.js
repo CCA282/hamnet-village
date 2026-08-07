@@ -1,19 +1,40 @@
 import * as C from '../constants/index.js'
-import { game, build, canBuild } from '../store.js'
+import { game, build, canBuild, buyBuildingUpgrade } from '../store.js'
 
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by)
 
 export const actionMethods = {
+  _isBuildingOccupied(spot, p) {
+    return this.players.some((other) => {
+      if (other === p) return false
+      if (game.buildingMenuOpen && game.buildingMenuBuilding === spot.building && game.buildingMenuOpener === other.id) return true
+      if (other.buildingMenuId === spot.building) return true
+      return false
+    })
+  },
+
+  _isVillageOccupied(p) {
+    return this.players.some((other) => {
+      if (other === p) return false
+      if (game.menuOpen && game.menuOpener === other.id) return true
+      if (other.isInMenu) return true
+      return false
+    })
+  },
+
   computeTarget(p) {
     if (dist(p.x, p.y, C.VILLAGE.x, C.VILLAGE.y) < C.VILLAGE.r + 4) {
-      return { kind: 'menu', x: C.VILLAGE.x, y: C.VILLAGE.y - 30, ok: true }
+      if (this._isVillageOccupied(p)) {
+        return { kind: 'menu_occupied', x: C.VILLAGE.x, y: C.VILLAGE.y - 30, haloX: C.VILLAGE.x, haloY: C.VILLAGE.y, ok: false }
+      }
+      return { kind: 'menu', x: C.VILLAGE.x, y: C.VILLAGE.y - 30, haloX: C.VILLAGE.x, haloY: C.VILLAGE.y, ok: true }
     }
     for (const spot of C.BUILD_SPOTS) {
       const def = C.BUILDINGS[spot.building]
       if (game.buildings[spot.building] > 0) continue
       if (game.villageLevel < def.requiresLevel) continue
       if (dist(p.x, p.y, spot.x, spot.y) < C.INTERACT_RANGE + 4) {
-        return { kind: 'build', spot, x: spot.x, y: spot.y - 20, ok: canBuild(spot.building) }
+        return { kind: 'build', spot, x: spot.x, y: spot.y - 20, haloX: spot.x, haloY: spot.y, ok: canBuild(spot.building) }
       }
     }
 
@@ -22,7 +43,7 @@ export const actionMethods = {
     if (drivingCart) {
       const d = dist(p.x, p.y, drivingCart.x, drivingCart.y)
       if (d < C.INTERACT_RANGE) {
-        return { kind: 'cart', cart: drivingCart, x: drivingCart.x, y: drivingCart.y - 14, ok: true }
+        return { kind: 'cart', cart: drivingCart, x: drivingCart.x, y: drivingCart.y - 14, haloX: drivingCart.x, haloY: drivingCart.y, ok: true }
       }
       return null
     }
@@ -31,29 +52,43 @@ export const actionMethods = {
     for (const t of this.trees) {
       if (t.hp <= 0) continue
       const d = dist(p.x, p.y, t.x, t.y)
-      if (d < bestD) { bestD = d; best = { kind: 'chop', tree: t, x: t.x, y: t.y - 22, ok: game.upgrades.hache > 0 } }
+      if (d < bestD) { bestD = d; best = { kind: 'chop', tree: t, x: t.x, y: t.y - 22, haloX: t.x, haloY: t.y, ok: game.upgrades.hache > 0 } }
     }
     for (const f of this.fishSpots) {
       if (f.cd > 0) continue
       const d = dist(p.x, p.y, f.x, f.y)
-      if (d < bestD) { bestD = d; best = { kind: 'fish', spot: f, x: f.x, y: f.y - 10, ok: game.upgrades.fishing_rod > 0 } }
+      if (d < bestD) { bestD = d; best = { kind: 'fish', spot: f, x: f.x, y: f.y - 10, haloX: f.x, haloY: f.y, ok: game.upgrades.fishing_rod > 0 } }
     }
     for (const s of this.stoneSpots) {
       if (s.hp <= 0) continue
       const d = dist(p.x, p.y, s.x, s.y)
-      if (d < bestD) { bestD = d; best = { kind: 'mine', rock: s, x: s.x, y: s.y - 12, ok: game.upgrades.pioche > 0 } }
+      if (d < bestD) { bestD = d; best = { kind: 'mine', rock: s, x: s.x, y: s.y - 12, haloX: s.x, haloY: s.y, ok: game.upgrades.pioche > 0 } }
     }
     for (const b of this.berryBushes) {
       if (b.hp <= 0) continue
       const d = dist(p.x, p.y, b.x, b.y)
-      if (d < bestD) { bestD = d; best = { kind: 'pick', bush: b, x: b.x, y: b.y - 12, ok: game.upgrades.faucille > 0 } }
+      if (d < bestD) { bestD = d; best = { kind: 'pick', bush: b, x: b.x, y: b.y - 12, haloX: b.x, haloY: b.y, ok: game.upgrades.faucille > 0 } }
     }
 
     // Parked carts
     for (const cart of this.carts) {
       if (cart.following !== null) continue
       const d = dist(p.x, p.y, cart.x, cart.y)
-      if (d < bestD && d < C.INTERACT_RANGE) { best = { kind: 'cart', cart, x: cart.x, y: cart.y - 14, ok: true }; bestD = d }
+      if (d < bestD && d < C.INTERACT_RANGE) { best = { kind: 'cart', cart, x: cart.x, y: cart.y - 14, haloX: cart.x, haloY: cart.y, ok: true }; bestD = d }
+    }
+
+    // Built buildings → upgrade popup (or "occupé" if another player has it open)
+    for (const spot of C.BUILD_SPOTS) {
+      if (game.buildings[spot.building] <= 0) continue
+      const d = dist(p.x, p.y, spot.x, spot.y)
+      if (d < bestD) {
+        bestD = d
+        if (this._isBuildingOccupied(spot, p)) {
+          best = { kind: 'building_occupied', spot, x: spot.x, y: spot.y - 22, haloX: spot.x, haloY: spot.y, ok: false }
+        } else {
+          best = { kind: 'building', spot, x: spot.x, y: spot.y - 22, haloX: spot.x, haloY: spot.y, ok: true }
+        }
+      }
     }
 
     if (best && ['chop', 'fish', 'mine', 'pick'].includes(best.kind)) {
@@ -68,7 +103,21 @@ export const actionMethods = {
     const t = p.target
     if (!t) return
 
-    if (t.kind === 'menu') { if (isInitial) this.openMenu(p); return }
+    if (t.kind === 'menu_occupied' || t.kind === 'building_occupied') return
+    if (t.kind === 'menu') {
+      if (isInitial) {
+        if (p.source === 'remote') this.openRemoteMenu(p)
+        else this.openMenu(p)
+      }
+      return
+    }
+    if (t.kind === 'building') {
+      if (isInitial) {
+        if (p.source === 'remote') this.openRemoteBuildingMenu(p, t.spot.building)
+        else this.openBuildingMenu(p, t.spot.building)
+      }
+      return
+    }
     if (t.kind === 'build') {
       if (isInitial && build(t.spot.building)) {
         this.spawnPoof(t.spot.x, t.spot.y)

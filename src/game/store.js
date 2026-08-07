@@ -1,8 +1,3 @@
-// ============================================================================
-// État réactif partagé entre le moteur de jeu (canvas) et l'UI Vue (HUD/menu).
-// On garde ici uniquement ce que l'UI doit afficher / ce qui change peu souvent.
-// Les positions par frame vivent dans world.js (objets JS non réactifs = perf).
-// ============================================================================
 import { reactive } from 'vue'
 import { UPGRADES, BUILDINGS, GLOBAL_CAPACITY_LEVELS } from './constants/index.js'
 
@@ -14,10 +9,8 @@ export const game = reactive({
   villageLevel: 1,
   totalHarvested: 0,
 
-  // Compteurs de bâtiments construits (par id)
   buildings: { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0 },
 
-  // Niveaux d'amélioration
   upgrades: {
     speed: 0, harvest_yield: 0, harvest_speed: 0, village_lvl: 0,
     hache: 0, pioche: 0, fishing_rod: 0, faucille: 0,
@@ -25,28 +18,34 @@ export const game = reactive({
     cap_wood: 0, cap_fish: 0, cap_stone: 0, cap_berries: 0,
   },
 
-  // Joueurs (version légère pour le HUD : {id, label, color})
+  // Niveaux d'amélioration par bâtiment
+  buildingUpgrades: {
+    lumberjack: { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 },
+    fishinghut:  { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 },
+    quarry:      { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 },
+    garden:      { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 },
+  },
+
   players: [],
 
-  // Menu village
   menuOpen: false,
-  menuOpener: null,   // id du joueur qui a ouvert
-  menuIndex: 0,       // sélection courante (nav clavier/manette)
-
-  // Cycle jour/nuit (0 = aube, 0.25 = midi, 0.5 = crépuscule, 0.75 = nuit)
-  timeOfDay: 0.15,
-
-  // Astuce contextuelle affichée en bas
-  hint: '',
-
-  // Mode développeur : ressources gratuites
-  devMode: false,
-
-  // Onglet actif dans le menu village (0=village, 1=outils, 2=stockage, 3=bonus)
+  menuOpener: null,
+  menuIndex: 0,
   menuTab: 0,
+
+  // Menu d'amélioration d'un bâtiment spécifique
+  buildingMenuOpen: false,
+  buildingMenuBuilding: null,
+  buildingMenuIndex: 0,
+  buildingMenuOpener: null,
+
+  timeOfDay: 0.15,
+  hint: '',
+  devMode: false,
 })
 
-// --- Coût courant d'une amélioration ----------------------------------------
+// ── Upgrades village ──────────────────────────────────────────────────────────
+
 export function upgradeCost(key) {
   const def = UPGRADES[key]
   const lvl = game.upgrades[key]
@@ -68,7 +67,6 @@ function pay(cost) {
   for (const res in cost) game[res] -= cost[res]
 }
 
-// --- Achat d'une amélioration ------------------------------------------------
 export function buyUpgrade(key) {
   const def = UPGRADES[key]
   if (game.upgrades[key] >= def.max) return false
@@ -84,13 +82,11 @@ export function upgradeMaxed(key) {
   return game.upgrades[key] >= UPGRADES[key].max
 }
 
-// Capacité max du stock global pour une ressource (indexée sur le niveau d'upgrade)
 export function globalCap(res) {
   const lvl = game.upgrades['cap_' + res] || 0
   return GLOBAL_CAPACITY_LEVELS[Math.min(lvl, GLOBAL_CAPACITY_LEVELS.length - 1)]
 }
 
-// Entrées par onglet (toujours toutes visibles, même au max)
 const TAB_KEYS = [
   ['village_lvl'],
   ['hache', 'pioche', 'fishing_rod', 'faucille'],
@@ -103,10 +99,60 @@ export function menuEntries() {
   return TAB_KEYS[game.menuTab] || TAB_KEYS[0]
 }
 
-// --- Construction d'un bâtiment (déclenchée dans le monde) -------------------
+// ── Upgrades bâtiment ─────────────────────────────────────────────────────────
+
+export function buildingUpgradeCost(buildingId, type) {
+  const def = BUILDINGS[buildingId]?.upgrades?.[type]
+  if (!def) return {}
+  const lvl = game.buildingUpgrades[buildingId]?.[type] || 0
+  return { ...(def.costs[Math.min(lvl, def.costs.length - 1)] || {}) }
+}
+
+export function buildingUpgradeMaxed(buildingId, type) {
+  const def = BUILDINGS[buildingId]?.upgrades?.[type]
+  if (!def) return true
+  return (game.buildingUpgrades[buildingId]?.[type] || 0) >= def.max
+}
+
+export function canBuyBuildingUpgrade(buildingId, type) {
+  if (buildingUpgradeMaxed(buildingId, type)) return false
+  return canAfford(buildingUpgradeCost(buildingId, type))
+}
+
+export function buyBuildingUpgrade(buildingId, type) {
+  if (!canBuyBuildingUpgrade(buildingId, type)) return false
+  pay(buildingUpgradeCost(buildingId, type))
+  game.buildingUpgrades[buildingId][type]++
+  return true
+}
+
+// Entrées visibles dans le popup d'un bâtiment (transporter_speed masqué si pas de transporteur)
+export function buildingMenuEntries(buildingId) {
+  const def = BUILDINGS[buildingId]
+  if (!def?.upgrades) return []
+  const types = ['storage', 'speed', 'transporter', 'transporter_speed']
+  return types
+    .filter((t) => def.upgrades[t])
+    .filter((t) => t !== 'transporter_speed' || game.buildingUpgrades[buildingId]?.transporter > 0)
+}
+
+// ── Bâtiments : intervalles et stockage effectifs ────────────────────────────
+
+export function effectiveInterval(id) {
+  const speedLvl = game.buildingUpgrades[id]?.speed || 0
+  return BUILDINGS[id].interval * Math.pow(0.75, speedLvl)
+}
+
+export function effectiveStorageMax(id) {
+  const storageLvl = game.buildingUpgrades[id]?.storage || 0
+  return BUILDINGS[id].storageMax * Math.pow(2, storageLvl)
+}
+
+// ── Construction ──────────────────────────────────────────────────────────────
+
 export function canBuild(id) {
   const def = BUILDINGS[id]
-  if (game.buildings[id] > 0) return false          // un seul par emplacement en v1
+  if (game.buildings[id] > 0) return false
   if (game.villageLevel < def.requiresLevel) return false
   return canAfford(def.cost)
 }
@@ -118,11 +164,8 @@ export function build(id) {
   return true
 }
 
-export function effectiveInterval(id) {
-  return BUILDINGS[id].interval
-}
+// ── Stock global ──────────────────────────────────────────────────────────────
 
-// --- Dépôt au stock global (bâtiments auto + charrette) — respecte la capacité
 export function harvest(res, amount = 1) {
   const cap = globalCap(res)
   const have = game[res] || 0
@@ -133,7 +176,26 @@ export function harvest(res, amount = 1) {
   return actual
 }
 
-// Format court pour l'UI
 export function fmt(n) {
   return Math.floor(n).toString()
+}
+
+export function resetGame() {
+  game.wood = 0; game.fish = 0; game.stone = 0; game.berries = 0
+  game.villageLevel = 1; game.totalHarvested = 0
+  Object.assign(game.buildings, { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0 })
+  Object.assign(game.upgrades, {
+    speed: 0, harvest_yield: 0, harvest_speed: 0, village_lvl: 0,
+    hache: 0, pioche: 0, fishing_rod: 0, faucille: 0,
+    charrette: 0,
+    cap_wood: 0, cap_fish: 0, cap_stone: 0, cap_berries: 0,
+  })
+  for (const id of Object.keys(game.buildingUpgrades)) {
+    Object.assign(game.buildingUpgrades[id], { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 })
+  }
+  game.players = []
+  game.menuOpen = false; game.menuOpener = null; game.menuIndex = 0; game.menuTab = 0
+  game.buildingMenuOpen = false; game.buildingMenuBuilding = null
+  game.buildingMenuIndex = 0; game.buildingMenuOpener = null
+  game.timeOfDay = 0.15; game.hint = ''; game.devMode = false
 }

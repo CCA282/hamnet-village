@@ -9,6 +9,7 @@ export const cartMethods = {
   createCart() {
     const idx = this.carts.length
     this.carts.push({
+      id: this._nextId++,
       x: C.VILLAGE.x - 58 + idx * 18,
       y: C.VILLAGE.y + 22 + idx * 6,
       inventory: { wood: 0, fish: 0, stone: 0, berries: 0 },
@@ -41,11 +42,14 @@ export const cartMethods = {
         if (dist(pl.x, pl.y, cart.x, cart.y) < C.INTERACT_RANGE + 2) {
           for (const res of RESOURCES) {
             const qty = pl.inventory[res] || 0
-            if (qty > 0) {
-              cart.inventory[res] = (cart.inventory[res] || 0) + qty
-              pl.inventory[res] = 0
-              this.spawnIcon(ICON_MAP[res], cart.x + (Math.random() - 0.5) * 8, cart.y - 8)
-            }
+            if (qty <= 0) continue
+            const cartTotal = RESOURCES.reduce((s, r) => s + (cart.inventory[r] || 0), 0)
+            const space = C.CART_CAPACITY - cartTotal
+            if (space <= 0) continue
+            const transferred = Math.min(qty, space)
+            cart.inventory[res] = (cart.inventory[res] || 0) + transferred
+            pl.inventory[res] = qty - transferred
+            this.spawnIcon(ICON_MAP[res], cart.x + (Math.random() - 0.5) * 8, cart.y - 8)
           }
         }
       }

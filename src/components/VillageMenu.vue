@@ -4,6 +4,18 @@ import { game, upgradeCost, canAfford, buyUpgrade, upgradeMaxed, globalCap, TAB_
 import { UPGRADES, GLOBAL_CAPACITY_LEVELS } from '../game/constants/index.js'
 import { engine } from '../game/engine.js'
 import { spriteUrl } from '../game/sprites/index.js'
+import { netState } from '../net/netState.js'
+
+const showMenu = computed(() => {
+  if (!game.menuOpen) return false
+  if (netState.mode === 'local' || !netState.mode) return true
+  if (netState.mode === 'host') {
+    const opener = engine.world.players.find((p) => p.id === game.menuOpener)
+    return !opener || opener.source !== 'remote'
+  }
+  if (netState.mode === 'guest') return game.menuOpener === netState.myPlayerId
+  return false
+})
 
 const TABS = [
   { key: 'village',  label: '🏡', title: 'Village' },
@@ -47,16 +59,25 @@ onMounted(() => {
 
 function click(i, key) {
   game.menuIndex = i
-  buyUpgrade(key)
+  if (netState.mode === 'guest') {
+    engine.sendGuestMenuAction({ type: 'buy_upgrade', key })
+  } else {
+    buyUpgrade(key)
+  }
 }
 function close() {
-  engine.world.closeMenu()
+  if (netState.mode === 'guest') {
+    game.menuOpen = false
+    engine.sendGuestMenuAction({ type: 'close_village' })
+  } else {
+    engine.world.closeMenu()
+  }
 }
 </script>
 
 <template>
   <transition name="pop">
-    <div class="scrim" v-if="game.menuOpen" @pointerdown.self="close">
+    <div class="scrim" v-if="showMenu" @pointerdown.self="close">
       <div class="menu">
         <header>
           <h2>🏡 Village niv. {{ game.villageLevel }}</h2>

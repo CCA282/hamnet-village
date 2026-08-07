@@ -14,8 +14,15 @@ export const BUILDINGS = {
     produces: 'wood',
     amount: 1,
     interval: 3.0,
+    storageMax: 20,
     requiresLevel: 1,
     hint: 'Récolte le bois toute seule',
+    upgrades: {
+      storage:           { name: '📦 Entrepôt agrandi',      desc: 'Double la capacité de stockage',          costs: [{ wood: 30 }, { wood: 80 }, { wood: 200 }],                       max: 3 },
+      speed:             { name: '⚡ Production accélérée',  desc: 'Réduit le temps de production de 25 %',   costs: [{ wood: 25, stone: 8 }, { wood: 60, stone: 20 }, { wood: 150, stone: 50 }], max: 3 },
+      transporter:       { name: '🚗 Transporteur auto',     desc: 'Charrette automatique bâtiment↔village',  costs: [{ wood: 50, stone: 20 }],                                         max: 1 },
+      transporter_speed: { name: '🚀 Vitesse transporteur',  desc: 'Augmente la vitesse du transporteur',     costs: [{ wood: 20, stone: 8 }, { wood: 50, stone: 20 }, { wood: 120, stone: 50 }], max: 3 },
+    },
   },
   fishinghut: {
     name: 'Ponton de pêche',
@@ -24,8 +31,15 @@ export const BUILDINGS = {
     produces: 'fish',
     amount: 1,
     interval: 3.5,
+    storageMax: 20,
     requiresLevel: 2,
     hint: 'Pêche le poisson tout seul',
+    upgrades: {
+      storage:           { name: '📦 Entrepôt agrandi',      desc: 'Double la capacité de stockage',          costs: [{ fish: 20, wood: 15 }, { fish: 50, wood: 35 }, { fish: 120, wood: 80 }],  max: 3 },
+      speed:             { name: '⚡ Production accélérée',  desc: 'Réduit le temps de production de 25 %',   costs: [{ fish: 15, wood: 20 }, { fish: 40, wood: 50 }, { fish: 100, wood: 120 }], max: 3 },
+      transporter:       { name: '🚗 Transporteur auto',     desc: 'Charrette automatique bâtiment↔village',  costs: [{ wood: 50, stone: 20 }],                                              max: 1 },
+      transporter_speed: { name: '🚀 Vitesse transporteur',  desc: 'Augmente la vitesse du transporteur',     costs: [{ wood: 20, stone: 8 }, { wood: 50, stone: 20 }, { wood: 120, stone: 50 }], max: 3 },
+    },
   },
   quarry: {
     name: 'Carrière',
@@ -34,8 +48,15 @@ export const BUILDINGS = {
     produces: 'stone',
     amount: 1,
     interval: 4.5,
+    storageMax: 20,
     requiresLevel: 3,
     hint: 'Extrait la pierre toute seule',
+    upgrades: {
+      storage:           { name: '📦 Entrepôt agrandi',      desc: 'Double la capacité de stockage',          costs: [{ stone: 20, wood: 20 }, { stone: 50, wood: 50 }, { stone: 120, wood: 120 }], max: 3 },
+      speed:             { name: '⚡ Production accélérée',  desc: 'Réduit le temps de production de 25 %',   costs: [{ stone: 15, wood: 20 }, { stone: 40, wood: 50 }, { stone: 100, wood: 120 }], max: 3 },
+      transporter:       { name: '🚗 Transporteur auto',     desc: 'Charrette automatique bâtiment↔village',  costs: [{ wood: 50, stone: 25 }],                                                  max: 1 },
+      transporter_speed: { name: '🚀 Vitesse transporteur',  desc: 'Augmente la vitesse du transporteur',     costs: [{ wood: 20, stone: 8 }, { wood: 50, stone: 20 }, { wood: 120, stone: 50 }], max: 3 },
+    },
   },
   garden: {
     name: 'Jardin',
@@ -44,7 +65,14 @@ export const BUILDINGS = {
     produces: 'berries',
     amount: 1,
     interval: 4.0,
+    storageMax: 20,
     requiresLevel: 3,
     hint: 'Cueille les baies toute seule',
+    upgrades: {
+      storage:           { name: '📦 Entrepôt agrandi',      desc: 'Double la capacité de stockage',          costs: [{ berries: 25, wood: 15 }, { berries: 60, wood: 35 }, { berries: 150, wood: 80 }], max: 3 },
+      speed:             { name: '⚡ Production accélérée',  desc: 'Réduit le temps de production de 25 %',   costs: [{ berries: 20, wood: 15 }, { berries: 50, wood: 35 }, { berries: 120, wood: 80 }], max: 3 },
+      transporter:       { name: '🚗 Transporteur auto',     desc: 'Charrette automatique bâtiment↔village',  costs: [{ wood: 50, stone: 20 }],                                                    max: 1 },
+      transporter_speed: { name: '🚀 Vitesse transporteur',  desc: 'Augmente la vitesse du transporteur',     costs: [{ wood: 20, stone: 8 }, { wood: 50, stone: 20 }, { wood: 120, stone: 50 }], max: 3 },
+    },
   },
 }

@@ -1,23 +1,27 @@
 import * as C from '../constants/index.js'
 import { game } from '../store.js'
-import { KB_SCHEMES } from '../input.js'
+import { netState } from '../../net/netState.js'
+import { KB_SCHEMES } from '../input/index.js'
 
 const TWO_PI = Math.PI * 2
 
 export const playerMethods = {
   syncPlayers() {
-    game.players = this.players.map((p) => ({ id: p.id, label: p.label, color: p.color }))
+    game.players = this.players.map((p) => ({ id: p.id, label: p.label, color: p.color, hint: p.hint ?? '' }))
   },
 
   addPlayer(source, gamepadIndex = null) {
     if (this.players.length >= C.MAX_PLAYERS) return
+    const usedColors = new Set(this.players.map((p) => p.color))
+    const color = C.PLAYER_COLORS.find((c) => !usedColors.has(c)) ?? C.PLAYER_COLORS[0]
+    const num = this._nextPlayerNum++
     const idx = this.players.length
-    const color = C.PLAYER_COLORS[idx % C.PLAYER_COLORS.length]
     const angle = (idx / C.MAX_PLAYERS) * TWO_PI
+    const customName = source === 'kb1' ? (netState.playerName || '').trim() : ''
     const p = {
       id: this._nextId++,
       source, gamepadIndex, color,
-      label: 'P' + (idx + 1),
+      label: customName || ('P' + num),
       x: C.VILLAGE.x + Math.cos(angle) * 22,
       y: C.VILLAGE.y + C.VILLAGE.r + 10 + Math.sin(angle) * 6,
       facing: 1, walkPhase: 0, moving: false, frozen: false,
@@ -34,13 +38,16 @@ export const playerMethods = {
     const i = this.players.indexOf(p)
     if (i >= 0) this.players.splice(i, 1)
     if (game.menuOpener === p.id) this.closeMenu()
-    this.players.forEach((pl, k) => (pl.label = 'P' + (k + 1)))
+    // Labels and colors are not reassigned — each player keeps their identity
     this.syncPlayers()
   },
 
   findPlayer(pred) { return this.players.find(pred) },
 
   inputFor(input, p) {
+    if (p.source === 'remote') {
+      return p.remoteInput || { mx: 0, my: 0, action: false, actionHeld: false }
+    }
     if (p.source === 'pad') return input.padState(p.gamepadIndex)
     if (p.source === 'touch') return input.touchState()
     const s = input.keyboardState(p.source)
@@ -54,6 +61,39 @@ export const playerMethods = {
     s.left  = input.keyPressed(kb.left)
     s.right = input.keyPressed(kb.right)
     return s
+  },
+
+  addRemotePlayer(guestId, name = null) {
+    if (this.players.length >= C.MAX_PLAYERS) return null
+    const usedColors = new Set(this.players.map((p) => p.color))
+    const color = C.PLAYER_COLORS.find((c) => !usedColors.has(c)) ?? C.PLAYER_COLORS[0]
+    const num = this._nextPlayerNum++
+    const idx = this.players.length
+    const angle = (idx / C.MAX_PLAYERS) * Math.PI * 2
+    const customName = (name || '').trim()
+    const p = {
+      id: this._nextId++,
+      source: 'remote', gamepadIndex: null, color,
+      label: customName || ('P' + num),
+      remoteGuestId: guestId,
+      remoteInput: { mx: 0, my: 0, action: false, actionHeld: false },
+      x: C.VILLAGE.x + Math.cos(angle) * 22,
+      y: C.VILLAGE.y + C.VILLAGE.r + 10 + Math.sin(angle) * 6,
+      facing: 1, walkPhase: 0, moving: false, frozen: false,
+      spawn: 0.5, target: null, harvestCd: 0,
+      inventory: { wood: 0, fish: 0, stone: 0, berries: 0 },
+      isInMenu: false, menuIndex: 0, menuTab: 0,
+      buildingMenuId: null, buildingMenuIndex: 0,
+    }
+    this.players.push(p)
+    this.spawnPoof(p.x, p.y)
+    this.syncPlayers()
+    return p
+  },
+
+  applyRemoteInput(guestId, input) {
+    const p = this.players.find((pl) => pl.remoteGuestId === guestId)
+    if (p) p.remoteInput = input
   },
 
   handleJoins(input) {

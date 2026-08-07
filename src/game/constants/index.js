@@ -1,5 +1,5 @@
 export * from './camera.js'
-export * from './layout.js'
+export * from './layout/index.js'
 export * from './gameplay.js'
 export * from './buildings.js'
-export * from './upgrades.js'
+export * from './upgrades/index.js'

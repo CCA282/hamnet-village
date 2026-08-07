@@ -1,11 +1,10 @@
-// ============================================================================
-// Moteur : boucle de jeu (requestAnimationFrame), rendu haute-résolution.
-// Le canvas correspond aux pixels physiques de l'écran (clientSize × dpr) → net
-// à toutes tailles. Le monde reste en "world units" ; la caméra gère la mise
-// à l'échelle. Singleton partagé avec les composants Vue.
-// ============================================================================
 import { World } from './world/World.js'
-import { Input } from './input.js'
+import { Input } from './input/index.js'
+import { netState } from '../net/netState.js'
+import { send, disconnect } from '../net/socket.js'
+import { serializeWorld, applyWorldState } from '../net/sync.js'
+import { resetGame, buyUpgrade, buyBuildingUpgrade } from './store.js'
+import { game } from './store.js'
 
 class Engine {
   constructor() {
@@ -17,10 +16,12 @@ class Engine {
     this.last = 0
     this.running = false
     this._resizeObs = null
+    this._syncTimer = 0
+    this._inputTimer = 0
+    this._pendingAction = false
+    this._pendingCancel = false
   }
 
-  // Met à jour la taille physique du canvas (pixels réels = css × dpr).
-  // Appelé au démarrage et à chaque changement de taille.
   _resize() {
     if (!this.canvas) return
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -48,9 +49,17 @@ class Engine {
       if (!this.running) return
       let dt = (now - this.last) / 1000
       this.last = now
-      if (dt > 0.05) dt = 0.05 // évite les sauts après un onglet en arrière-plan
+      if (dt > 0.05) dt = 0.05
+
       this.input.beginFrame()
-      this.world.update(dt, this.input)
+
+      if (netState.mode === 'guest') {
+        this._tickGuest(dt)
+      } else {
+        this.world.update(dt, this.input)
+        if (netState.mode === 'host') this._tickHost(dt)
+      }
+
       this.ctx.imageSmoothingEnabled = false
       this.world.render(this.ctx)
       this.input.endFrame()
@@ -59,10 +68,120 @@ class Engine {
     this.raf = requestAnimationFrame(loop)
   }
 
+  _tickHost(dt) {
+    // Notify guest if their remote player just opened a menu
+    if (this.world._pendingRemoteMenuOpen) {
+      const { guestId, buildingId } = this.world._pendingRemoteMenuOpen
+      this.world._pendingRemoteMenuOpen = null
+      send({ type: 'open_menu_for_guest', guestId, buildingId: buildingId ?? null })
+    }
+    // Notify guest if their remote player's menu was closed (e.g. cancel key)
+    if (this.world._pendingRemoteMenuClose) {
+      const { guestId } = this.world._pendingRemoteMenuClose
+      this.world._pendingRemoteMenuClose = null
+      send({ type: 'close_menu_for_guest', guestId })
+    }
+    this._syncTimer += dt
+    if (this._syncTimer >= 0.033) {
+      this._syncTimer = 0
+      const snap = serializeWorld(this.world, { includeSpotsState: true })
+      send({ type: 'state', data: snap })
+    }
+  }
+
+  _tickGuest(dt) {
+    // Buffer one-frame presses between sends
+    const s = this.input.keyboardState('kb1')
+    if (s.action || this.input.mouseAction) this._pendingAction = true
+    if (s.cancel) this._pendingCancel = true
+
+    this._inputTimer += dt
+    if (this._inputTimer >= 0.033) {
+      this._inputTimer = 0
+      send({ type: 'input', input: {
+        mx: s.mx || 0,
+        my: s.my || 0,
+        action: this._pendingAction,
+        actionHeld: s.actionHeld || !!this.input.mouseHeld,
+        cancel: this._pendingCancel,
+        up:    this.input.keyDown('KeyW'),
+        down:  this.input.keyDown('KeyS'),
+        left:  this.input.keyDown('KeyA'),
+        right: this.input.keyDown('KeyD'),
+      }})
+      this._pendingAction = false
+      this._pendingCancel = false
+    }
+    this.world.updateGuestVisuals(dt)
+  }
+
+  applySnapshot(snap) {
+    applyWorldState(this.world, snap)
+    if (snap.guestPlayerId && !netState.myPlayerId) {
+      netState.myPlayerId = snap.guestPlayerId
+    }
+  }
+
+  // Guest: host tells us our remote player just opened a menu
+  applyRemoteMenuOpen(buildingId) {
+    // Consume the press that triggered the menu open so it doesn't also buy an upgrade
+    this._pendingAction = false
+    this._pendingCancel = false
+    if (buildingId) {
+      game.buildingMenuOpen = true
+      game.buildingMenuBuilding = buildingId
+      game.buildingMenuIndex = 0
+      game.buildingMenuOpener = netState.myPlayerId
+    } else {
+      game.menuOpen = true
+      game.menuOpener = netState.myPlayerId
+      game.menuIndex = 0
+      game.menuTab = 0
+    }
+  }
+
+  // Guest: send a menu action to host
+  sendGuestMenuAction(action) {
+    send({ type: 'guest_menu_action', action })
+    this._pendingAction = false
+    this._pendingCancel = false
+  }
+
+  // Host: execute a menu action requested by a guest
+  processGuestMenuAction(guestId, action) {
+    const remoteP = this.world.players.find((pl) => pl.remoteGuestId === guestId)
+    if (action.type === 'close_village') {
+      if (remoteP) this.world.closeRemoteMenu(remoteP)
+    } else if (action.type === 'close_building') {
+      if (remoteP) this.world.closeRemoteBuildingMenu(remoteP)
+    } else if (action.type === 'buy_upgrade') {
+      buyUpgrade(action.key)
+    } else if (action.type === 'buy_building_upgrade') {
+      buyBuildingUpgrade(action.buildingId, action.upgradeType)
+    }
+  }
+
   stop() {
     this.running = false
     cancelAnimationFrame(this.raf)
     if (this._resizeObs) { this._resizeObs.disconnect(); this._resizeObs = null }
+  }
+
+  reset() {
+    this.stop()
+    disconnect()
+    resetGame()
+    this.world = new World()
+    this._syncTimer = 0
+    this._inputTimer = 0
+    this._pendingAction = false
+    this._pendingCancel = false
+    netState.mode = null
+    netState.roomCode = null
+    netState.connected = false
+    netState.myPlayerId = null
+    netState.worldId = null
+    netState.worldName = 'Mon monde'
   }
 }
 

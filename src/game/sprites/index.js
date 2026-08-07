@@ -1,4 +1,4 @@
-import { DEFS } from './defs.js'
+import { DEFS } from './defs/index.js'
 
 // Build an offscreen canvas from a pixel-art grid + palette
 function build(rows, palette) {

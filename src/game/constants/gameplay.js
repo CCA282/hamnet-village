@@ -1,4 +1,4 @@
-export const PLAYER_COLORS = ['#e06c6c', '#6c8fe0', '#6cc08a', '#e0c76c', '#b78ce0', '#e0956c']
+export const PLAYER_COLORS = ['#6c8fe0', '#e0c76c', '#b78ce0', '#e0956c', '#e06c6c', '#e06cba']
 export const MAX_PLAYERS = 6
 
 export const BASE_SPEED = 74
@@ -22,5 +22,6 @@ export const BERRY_REGROW = 12
 export const DAY_LENGTH = 150
 
 export const PLAYER_INVENTORY_MAX = 9
+export const CART_CAPACITY = 18
 export const CART_DEPOSIT_RANGE = 58
 export const GLOBAL_CAPACITY_LEVELS = [25, 50, 75, 100, 200, 500, 1000]
