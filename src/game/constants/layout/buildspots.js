@@ -5,6 +5,7 @@ export const BUILD_SPOTS = [
   { id: 'quarry',     x: 645, y: 348, building: 'quarry' },
   { id: 'garden',     x: 500, y: 490, building: 'garden' },
   { id: 'astronomy',  x: 180, y: 160, building: 'astronomy' },
+  { id: 'puits',      x: 524, y: 296, building: 'puits' },
 ]
 
 export const TELESCOPE_OFFSET_X = 26

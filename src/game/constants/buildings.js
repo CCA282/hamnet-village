@@ -75,6 +75,18 @@ export const BUILDINGS = {
       transporter_speed: { name: '🚀 Vitesse transporteur',  desc: 'Augmente la vitesse du transporteur',     costs: [{ wood: 20, stone: 8 }, { wood: 50, stone: 20 }, { wood: 120, stone: 50 }], max: 3 },
     },
   },
+  puits: {
+    name: 'Puits',
+    sprite: 'puits',
+    cost: { wood: 30, stone: 40 },
+    produces: null,
+    noProduction: true,
+    storageMax: 0,
+    requiresLevel: 4,
+    requiresUpgrade: 'pioche_stellaire',
+    hint: "Puisez de l'eau pour arroser",
+    upgrades: null,
+  },
   astronomy: {
     name: "Tour d'astronomie",
     sprite: 'astronomy',

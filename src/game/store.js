@@ -10,7 +10,7 @@ export const game = reactive({
   villageLevel: 1,
   totalHarvested: 0,
 
-  buildings: { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 },
+  buildings: { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0, puits: 0 },
 
   upgrades: {
     speed: 0, harvest_yield: 0, harvest_speed: 0, village_lvl: 0,
@@ -26,6 +26,7 @@ export const game = reactive({
     quarry:      { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 },
     garden:      { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 },
     astronomy:   { storage: 0, speed: 0, transporter: 0, transporter_speed: 0, observatory: 0 },
+    puits:       {},
   },
 
   players: [],
@@ -166,6 +167,7 @@ export function canBuild(id) {
   const def = BUILDINGS[id]
   if (game.buildings[id] > 0) return false
   if (game.villageLevel < def.requiresLevel) return false
+  if (def.requiresUpgrade && !game.upgrades[def.requiresUpgrade]) return false
   return canAfford(def.cost)
 }
 
@@ -195,7 +197,7 @@ export function fmt(n) {
 export function resetGame() {
   game.wood = 0; game.fish = 0; game.stone = 0; game.berries = 0; game.meteorite = 0
   game.villageLevel = 1; game.totalHarvested = 0
-  Object.assign(game.buildings, { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 })
+  Object.assign(game.buildings, { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0, puits: 0 })
   Object.assign(game.upgrades, {
     speed: 0, harvest_yield: 0, harvest_speed: 0, village_lvl: 0,
     hache: 0, pioche: 0, pioche_stellaire: 0, fishing_rod: 0, faucille: 0,

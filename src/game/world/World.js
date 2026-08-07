@@ -50,7 +50,7 @@ export class World {
     this.prodTimers = { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 }
     this.buildingInventories = {}
     for (const [id, def] of Object.entries(C.BUILDINGS)) {
-      this.buildingInventories[id] = { [def.produces]: 0 }
+      if (def.produces) this.buildingInventories[id] = { [def.produces]: 0 }
     }
     this.carts = []
     this.autoTransporters = []

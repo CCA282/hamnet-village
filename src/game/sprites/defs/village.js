@@ -68,6 +68,19 @@ export const villageDefs = {
     ],
     pal: { y: C.fire_y, o: C.fire_o, r: C.fire_r, s: C.rock_d, S: C.rock },
   },
+  puits: {
+    rows: [
+      '....bb....',
+      '..WwwwwW..',
+      '..WWWWWW..',
+      '.SSSSSSSS.',
+      '.SooooooS.',
+      '.SooooooS.',
+      '.SSSSSSSS.',
+      '..ssssss..',
+    ],
+    pal: { b: '#7a4820', W: '#b87830', w: '#d0a050', S: '#a0a2b0', s: '#6e7080', o: '#4a90c8' },
+  },
   cart: {
     rows: [
       'h..TTTTTTT.',
