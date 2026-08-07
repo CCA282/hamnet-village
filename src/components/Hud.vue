@@ -87,6 +87,10 @@ const isDayTime = computed(() => {
   return t >= 0.08 && t < 0.55
 })
 
+async function copyCoords(c) {
+  try { await navigator.clipboard.writeText(`${c.x}, ${c.y}`) } catch { /* ignore */ }
+}
+
 function skipTime() {
   const goingToNight = isDayTime.value
   game.timeOfDay = goingToNight ? 0.58 : 0.12
@@ -179,7 +183,13 @@ onMounted(() => {
     <!-- Dev mode panel (host et local uniquement) -->
     <div v-if="netState.mode !== 'guest'" class="dev-bar">
       <template v-if="game.devMode">
-        <span v-for="c in game.devCoords" :key="c.id" class="dev-coord">{{ c.label }}: {{ c.x }},{{ c.y }}</span>
+        <span
+          v-for="c in game.devCoords"
+          :key="c.id"
+          class="dev-coord"
+          title="Copier les coordonnées"
+          @pointerdown.stop="copyCoords(c)"
+        >{{ c.label }}: x{{ c.x }} y{{ c.y }}</span>
         <button class="dev-skip-btn" @pointerdown.stop="skipTime">{{ isDayTime ? '🌙' : '☀️' }}</button>
       </template>
       <button
@@ -269,7 +279,10 @@ onMounted(() => {
   border-radius: 6px;
   font-family: monospace;
   letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 0.1s;
 }
+.dev-coord:hover { background: rgba(60, 44, 10, 0.9); }
 
 .dev-skip-btn {
   background: rgba(40, 30, 14, 0.75);
