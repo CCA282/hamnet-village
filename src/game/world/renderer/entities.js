@@ -103,7 +103,7 @@ export const entityMethods = {
 
   drawHalo(ctx, target, t, color) {
     let bx, by, rx, ry
-    const sizes = { chop:[10,5], fish:[13,6], mine:[9,4], pick:[8,4], cart:[10,5], build:[12,6], building:[12,6], menu:[20,10], building_occupied:[12,6], menu_occupied:[20,10] }
+    const sizes = { chop:[10,5], fish:[13,6], mine:[9,4], pick:[8,4], cart:[10,5], build:[12,6], building:[12,6], menu:[20,10], building_occupied:[12,6], menu_occupied:[20,10], noisette:[10,5] }
     if (!sizes[target.kind]) return
     ;[rx, ry] = sizes[target.kind]
     if (target.haloX !== undefined) {
@@ -111,14 +111,15 @@ export const entityMethods = {
       bx = target.haloX; by = target.haloY
     } else {
       switch (target.kind) {
-        case 'chop':     bx = target.tree.x;  by = target.tree.y;  break
-        case 'fish':     bx = target.spot.x;  by = target.spot.y;  break
-        case 'mine':     bx = target.rock.x;  by = target.rock.y;  break
-        case 'pick':     bx = target.bush.x;  by = target.bush.y;  break
-        case 'cart':     bx = target.cart.x;  by = target.cart.y;  break
+        case 'chop':     bx = target.tree.x;     by = target.tree.y;     break
+        case 'fish':     bx = target.spot.x;     by = target.spot.y;     break
+        case 'mine':     bx = target.rock.x;     by = target.rock.y;     break
+        case 'pick':     bx = target.bush.x;     by = target.bush.y;     break
+        case 'cart':     bx = target.cart.x;     by = target.cart.y;     break
         case 'build':
-        case 'building': bx = target.spot.x;  by = target.spot.y;  break
-        case 'menu':     bx = C.VILLAGE.x;    by = C.VILLAGE.y;    break
+        case 'building': bx = target.spot.x;     by = target.spot.y;     break
+        case 'noisette': bx = target.noisette.x; by = target.noisette.y; break
+        case 'menu':     bx = C.VILLAGE.x;       by = C.VILLAGE.y;       break
       }
     }
     const pulse = 0.5 + 0.5 * Math.sin(t * 3)

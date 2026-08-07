@@ -12,6 +12,7 @@ import { natureMethods }   from './nature.js'
 import { cameraMethods }   from './camera.js'
 import { hintMethods }      from './hints.js'
 import { meteoriteMethods } from './meteorites.js'
+import { noisetteMethods }  from './noisette.js'
 import { rendererMethods }  from './renderer/index.js'
 
 const TWO_PI = Math.PI * 2
@@ -46,6 +47,9 @@ export class World {
     this.meteoriteSpots = []
     this._meteoriteTimer = 0
     this._nextMeteoriteSpawn = 20
+
+    // Noisette / Noisetier (spawns at level 4, fixed position in forest)
+    this.noisette = { x: 310, y: 200, stage: 0, growing: false, growTimer: 0 }
 
     this.prodTimers = { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 }
     this.buildingInventories = {}
@@ -167,6 +171,7 @@ export class World {
     while (this.carts.length < game.upgrades.charrette) this.createCart()
 
     this.updateHint()
+    this.updateNoisette(dt)
     this.updateMeteorites(dt)
     this.updateCarts(dt)
     this.updateBuildings(dt)
@@ -198,5 +203,6 @@ Object.assign(
   cameraMethods,
   hintMethods,
   meteoriteMethods,
+  noisetteMethods,
   rendererMethods,
 )

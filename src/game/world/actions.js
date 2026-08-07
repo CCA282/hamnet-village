@@ -102,6 +102,17 @@ export const actionMethods = {
       }
     }
 
+    if (game.villageLevel >= 4) {
+      const n = this.noisette
+      const d = dist(p.x, p.y, n.x, n.y)
+      if (d < bestD) {
+        bestD = d
+        const canWater = p.water && !n.growing && n.stage < 3
+        const spriteKey = n.stage === 0 ? 'noisette' : `noisetier_${n.stage}`
+        best = { kind: 'noisette', noisette: n, x: n.x, y: n.y - 14, haloX: n.x, haloY: n.y, ok: canWater, spriteKey }
+      }
+    }
+
     const astSpot = ASTRONOMY_SPOT()
     if (astSpot && game.buildings.astronomy > 0 && (game.buildingUpgrades.astronomy?.observatory || 0) > 0) {
       const tx = astSpot.x + C.TELESCOPE_OFFSET_X, ty = astSpot.y
@@ -230,6 +241,10 @@ export const actionMethods = {
       p.harvestCd = this.effectiveHarvestCd()
       this.spawnIcon('icon_meteorite', m.x, m.y - 10)
       this.spawnRipple(m.x, m.y)
+      return
+    }
+    if (t.kind === 'noisette') {
+      if (isInitial && t.ok) this.waterNoisette(p)
       return
     }
     if (t.kind === 'telescope') {

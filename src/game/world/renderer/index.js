@@ -93,6 +93,10 @@ const coreMethods = {
     // Depth-sorted entities
     const ents = []
     for (const tr of this.trees) ents.push({ y: tr.y, draw: () => this.drawTree(ctx, tr) })
+    if (game.villageLevel >= 4) {
+      const n = this.noisette
+      ents.push({ y: n.y, draw: () => this.drawNoisette(ctx, n) })
+    }
     for (const b of this.berryBushes) ents.push({ y: b.y, draw: () => this.drawBerryBush(ctx, b) })
     for (const s of this.stoneSpots) ents.push({ y: s.y, draw: () => this.drawStoneSpot(ctx, s) })
     for (const m of this.meteoriteSpots) {

@@ -20,6 +20,13 @@ export const hintMethods = {
         else if (t.kind === 'mine') hint = t.inventoryFull ? 'Sac plein ! Approchez la charrette pour déposer 🛒' : t.ok ? '' : "Besoin d'une pioche ⛏️"
         else if (t.kind === 'pick') hint = t.inventoryFull ? 'Sac plein ! Approchez la charrette pour déposer 🛒' : t.ok ? '' : "Besoin d'une faucille 🌾"
         else if (t.kind === 'meteorite') hint = t.inventoryFull ? 'Sac plein ! Approchez la charrette pour déposer 🛒' : '☄️ Météorite — ramassez-la !'
+        else if (t.kind === 'noisette') {
+          const n = t.noisette
+          if (n.growing) hint = '🌱 Pousse en cours…'
+          else if (n.stage >= 3) hint = '🌰 Le noisetier est pleinement développé !'
+          else if (!p.water) hint = n.stage === 0 ? '💧 Arrosez la noisette' : '💧 Arrosez le noisetier'
+          else hint = n.stage === 0 ? '💧 Arrosez la noisette pour la faire pousser' : '💧 Arrosez le noisetier'
+        }
         else if (t.kind === 'telescope') hint = '🔭 Observer le ciel'
       }
       p.hint = hint

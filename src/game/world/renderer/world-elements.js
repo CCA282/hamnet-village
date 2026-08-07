@@ -28,6 +28,23 @@ export const worldElementMethods = {
     this.drawBottom(ctx, sprite('tree'), tr.x + dx, tr.y)
   },
 
+  drawNoisette(ctx, n) {
+    const sKey = n.stage === 0 ? 'noisette' : `noisetier_${n.stage}`
+    const s = sprite(sKey)
+    // Gentle sway for the tree stages
+    const dx = n.stage > 0 ? Math.sin(this.time * 1.4 + n.x) * 0.6 : 0
+    this.drawShadow(ctx, n.x, n.y, Math.max(6, s.width * 0.7))
+    this.drawBottom(ctx, s, n.x + dx, n.y)
+    // Sparkle drips while growing
+    if (n.growing) {
+      const phase = (this.time * 2) % 1
+      ctx.globalAlpha = 0.7 * Math.abs(Math.sin(this.time * 3))
+      ctx.fillStyle = '#4ab0e8'
+      ctx.fillRect(Math.round(n.x - 2 + Math.sin(this.time * 4) * 3), Math.round(n.y - s.height * 0.5 - phase * s.height * 0.4), 1, 2)
+      ctx.globalAlpha = 1
+    }
+  },
+
   drawDeer(ctx, d) {
     const s = sprite('deer')
     this.drawShadow(ctx, d.x, d.y, s.width)
