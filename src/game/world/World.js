@@ -186,6 +186,9 @@ export class World {
     this.updateParticles(dt)
     if (game.villageLevel <= 3) this.emitCampfire(dt)
     this.updateCamera(dt)
+    if (game.devMode) {
+      game.devCoords = this.players.map((p) => ({ id: p.id, label: p.label, x: Math.round(p.x), y: Math.round(p.y) }))
+    }
   }
 }
 

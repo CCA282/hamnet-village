@@ -82,6 +82,17 @@ const timeIcon = computed(() => {
 
 const meteoritesVisible = computed(() => game.villageLevel >= 3 || game.meteorite > 0)
 
+const isDayTime = computed(() => {
+  const t = game.timeOfDay
+  return t >= 0.08 && t < 0.55
+})
+
+function skipTime() {
+  game.timeOfDay = isDayTime.value ? 0.58 : 0.12
+  const n = engine.world?.noisette
+  if (n && n.growing && n.growTimer > 0) n.growTimer = 0
+}
+
 const icons = reactive({ wood: '', fish: '', stone: '', berries: '', meteorite: '' })
 onMounted(() => {
   icons.wood       = spriteUrl('icon_wood')
@@ -160,13 +171,18 @@ onMounted(() => {
       <div class="hint" v-if="displayHint">{{ displayHint }}</div>
     </transition>
 
-    <!-- Bouton dev mode (host et local uniquement) -->
-    <button
-      v-if="netState.mode !== 'guest'"
-      class="dev-btn"
-      :class="{ active: game.devMode }"
-      @pointerdown.stop="game.devMode = !game.devMode"
-    >{{ game.devMode ? '⚡ DEV ON' : 'DEV' }}</button>
+    <!-- Dev mode panel (host et local uniquement) -->
+    <div v-if="netState.mode !== 'guest'" class="dev-bar">
+      <template v-if="game.devMode">
+        <span v-for="c in game.devCoords" :key="c.id" class="dev-coord">{{ c.label }}: {{ c.x }},{{ c.y }}</span>
+        <button class="dev-skip-btn" @pointerdown.stop="skipTime">{{ isDayTime ? '🌙' : '☀️' }}</button>
+      </template>
+      <button
+        class="dev-btn"
+        :class="{ active: game.devMode }"
+        @pointerdown.stop="game.devMode = !game.devMode"
+      >{{ game.devMode ? '⚡ DEV ON' : 'DEV' }}</button>
+    </div>
   </div>
 </template>
 
@@ -229,11 +245,40 @@ onMounted(() => {
   box-shadow: 0 4px 14px var(--cozy-shadow);
 }
 
-.dev-btn {
+.dev-bar {
   position: absolute;
   bottom: 16px;
   right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   pointer-events: auto;
+}
+
+.dev-coord {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 200, 60, 0.85);
+  background: rgba(20, 14, 4, 0.7);
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-family: monospace;
+  letter-spacing: 0.5px;
+}
+
+.dev-skip-btn {
+  background: rgba(40, 30, 14, 0.75);
+  border: 1px solid rgba(220, 180, 80, 0.35);
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.12s;
+}
+.dev-skip-btn:hover { background: rgba(80, 60, 20, 0.9); }
+
+.dev-btn {
   background: rgba(40, 30, 14, 0.65);
   color: rgba(220, 180, 80, 0.6);
   border: 1px solid rgba(220, 180, 80, 0.25);

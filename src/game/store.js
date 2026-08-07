@@ -47,6 +47,7 @@ export const game = reactive({
   hintOverride: '',
   telescopeOpen: false,
   devMode: false,
+  devCoords: [],
 })
 
 // ── Upgrades village ──────────────────────────────────────────────────────────
@@ -212,5 +213,5 @@ export function resetGame() {
   game.menuOpen = false; game.menuOpener = null; game.menuIndex = 0; game.menuTab = 0
   game.buildingMenuOpen = false; game.buildingMenuBuilding = null
   game.buildingMenuIndex = 0; game.buildingMenuOpener = null
-  game.timeOfDay = 0.15; game.hint = ''; game.hintOverride = ''; game.telescopeOpen = false; game.devMode = false
+  game.timeOfDay = 0.15; game.hint = ''; game.hintOverride = ''; game.telescopeOpen = false; game.devMode = false; game.devCoords = []
 }
