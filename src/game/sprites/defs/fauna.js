@@ -19,4 +19,18 @@ export const faunaDefs = {
     rows: ['ww...ww', '.ww.ww.', '..www..'],
     pal: { w: '#5a5a6a' },
   },
+  squirrel: {
+    rows: [
+      '...fff',
+      '..fFff',
+      '.fffff',
+      '.feffe',
+      '.fffff',
+      'ffnnff',
+      '.ffff.',
+      '.f..f.',
+      'ff..ff',
+    ],
+    pal: { f: '#c07840', F: '#e09858', n: '#201008', e: '#f0c8a0', },
+  },
 }

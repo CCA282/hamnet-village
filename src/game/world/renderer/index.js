@@ -96,6 +96,7 @@ const coreMethods = {
     if (game.villageLevel >= 4) {
       const n = this.noisette
       ents.push({ y: n.y, draw: () => this.drawNoisette(ctx, n) })
+      for (const sq of this.squirrels) ents.push({ y: sq.y, draw: () => this.drawSquirrel(ctx, sq) })
     }
     for (const b of this.berryBushes) ents.push({ y: b.y, draw: () => this.drawBerryBush(ctx, b) })
     for (const s of this.stoneSpots) ents.push({ y: s.y, draw: () => this.drawStoneSpot(ctx, s) })

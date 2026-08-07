@@ -25,4 +25,8 @@ export const iconDefs = {
     rows: ['....Mm', '...Mmm', '.mMm..', 'mMm...', 'mm....', 'm.....'],
     pal: { M: '#d8c8ff', m: '#7850c8' },
   },
+  icon_heart: {
+    rows: ['.r.r.', 'rrrrr', '.rrr.', '..r..'],
+    pal: { r: '#e83050' },
+  },
 }
