@@ -25,7 +25,7 @@ export const playerMethods = {
       x: C.VILLAGE.x + Math.cos(angle) * 22,
       y: C.VILLAGE.y + C.VILLAGE.r + 10 + Math.sin(angle) * 6,
       facing: 1, walkPhase: 0, moving: false, frozen: false,
-      spawn: 0.5, target: null, harvestCd: 0,
+      spawn: 0.5, target: null, harvestCd: 0, water: false,
       inventory: { wood: 0, fish: 0, stone: 0, berries: 0, meteorite: 0 },
     }
     this.players.push(p)
@@ -80,7 +80,7 @@ export const playerMethods = {
       x: C.VILLAGE.x + Math.cos(angle) * 22,
       y: C.VILLAGE.y + C.VILLAGE.r + 10 + Math.sin(angle) * 6,
       facing: 1, walkPhase: 0, moving: false, frozen: false,
-      spawn: 0.5, target: null, harvestCd: 0,
+      spawn: 0.5, target: null, harvestCd: 0, water: false,
       inventory: { wood: 0, fish: 0, stone: 0, berries: 0, meteorite: 0 },
       isInMenu: false, menuIndex: 0, menuTab: 0,
       buildingMenuId: null, buildingMenuIndex: 0,

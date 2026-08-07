@@ -134,8 +134,20 @@ export const actionMethods = {
     }
     if (t.kind === 'building') {
       if (isInitial) {
-        if (p.source === 'remote') this.openRemoteBuildingMenu(p, t.spot.building)
-        else this.openBuildingMenu(p, t.spot.building)
+        if (t.spot.building === 'puits') {
+          for (const res in p.inventory) {
+            if ((p.inventory[res] || 0) > 0) {
+              this.spawnIcon(`icon_${res}`, t.spot.x + (Math.random() - 0.5) * 10, t.spot.y - 10)
+              p.inventory[res] = 0
+            }
+          }
+          p.water = true
+          this.spawnPoof(t.spot.x, t.spot.y - 4)
+        } else if (p.source === 'remote') {
+          this.openRemoteBuildingMenu(p, t.spot.building)
+        } else {
+          this.openBuildingMenu(p, t.spot.building)
+        }
       }
       return
     }
@@ -164,6 +176,7 @@ export const actionMethods = {
       tree.hp--
       tree.shake = 0.25
       if (!this.harvestToPlayer(p, 'wood', 1)) return
+      p.water = false
       p.harvestCd = this.effectiveHarvestCd()
       this.spawnIcon('icon_wood', tree.x + 4, tree.y - 20)
       this.spawnLeaves(tree.x, tree.y - 16, 3)
@@ -176,6 +189,7 @@ export const actionMethods = {
       if (f.cd > 0) return
       f.cd = C.FISH_COOLDOWN
       if (!this.harvestToPlayer(p, 'fish', 1 + game.upgrades.harvest_yield)) { f.cd = 0; return }
+      p.water = false
       p.harvestCd = this.effectiveHarvestCd()
       this.spawnIcon('icon_fish', f.x, f.y - 6)
       this.spawnRipple(f.x, f.y)
@@ -187,6 +201,7 @@ export const actionMethods = {
       if (r.hp <= 0) return
       r.hp--
       if (!this.harvestToPlayer(p, 'stone', 1)) { r.hp++; return }
+      p.water = false
       p.harvestCd = this.effectiveHarvestCd()
       this.spawnIcon('icon_stone', r.x + 2, r.y - 10)
       this.spawnRipple(r.x, r.y)
@@ -199,6 +214,7 @@ export const actionMethods = {
       if (b.hp <= 0) return
       b.hp--
       if (!this.harvestToPlayer(p, 'berries', 1)) { b.hp++; return }
+      p.water = false
       p.harvestCd = this.effectiveHarvestCd()
       this.spawnIcon('icon_berries', b.x, b.y - 10)
       if (b.hp <= 0) b.regrow = C.BERRY_REGROW
@@ -210,6 +226,7 @@ export const actionMethods = {
       if (m.hp <= 0) return
       m.hp--
       if (!this.harvestToPlayer(p, 'meteorite', 1)) { m.hp++; return }
+      p.water = false
       p.harvestCd = this.effectiveHarvestCd()
       this.spawnIcon('icon_meteorite', m.x, m.y - 10)
       this.spawnRipple(m.x, m.y)

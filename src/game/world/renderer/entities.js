@@ -51,15 +51,24 @@ export const entityMethods = {
     ctx.fillStyle = p.color
     ctx.fillText(p.label, p.x, y)
 
-    const invTotal = Object.values(p.inventory).reduce((a, b) => a + b, 0)
-    if (invTotal > 0) {
+    if (p.water) {
       const barW = 14, barH = 2
       const bx = Math.round(p.x - barW / 2), by = Math.round(y - 9)
       ctx.fillStyle = 'rgba(0,0,0,0.45)'
       ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2)
-      const invMax = effectiveInventoryMax()
-      ctx.fillStyle = invTotal >= invMax ? '#e05050' : '#f0d050'
-      ctx.fillRect(bx, by, Math.round(barW * invTotal / invMax), barH)
+      ctx.fillStyle = '#4ab0e8'
+      ctx.fillRect(bx, by, barW, barH)
+    } else {
+      const invTotal = Object.values(p.inventory).reduce((a, b) => a + b, 0)
+      if (invTotal > 0) {
+        const barW = 14, barH = 2
+        const bx = Math.round(p.x - barW / 2), by = Math.round(y - 9)
+        ctx.fillStyle = 'rgba(0,0,0,0.45)'
+        ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2)
+        const invMax = effectiveInventoryMax()
+        ctx.fillStyle = invTotal >= invMax ? '#e05050' : '#f0d050'
+        ctx.fillRect(bx, by, Math.round(barW * invTotal / invMax), barH)
+      }
     }
     ctx.textAlign = 'left'
   },
