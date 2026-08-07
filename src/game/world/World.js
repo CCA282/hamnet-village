@@ -82,7 +82,7 @@ export class World {
     this.updateDeer(dt)
     this.updateBirds(dt)
     this.updateParticles(dt)
-    this.emitCampfire(dt)
+    if (game.villageLevel <= 3) this.emitCampfire(dt)
     this.updateCamera(dt)
   }
 
@@ -179,7 +179,7 @@ export class World {
     this.updateDeer(dt)
     this.updateBirds(dt)
     this.updateParticles(dt)
-    this.emitCampfire(dt)
+    if (game.villageLevel <= 3) this.emitCampfire(dt)
     this.updateCamera(dt)
   }
 }

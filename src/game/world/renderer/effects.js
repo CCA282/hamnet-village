@@ -37,16 +37,20 @@ export const effectMethods = {
     ctx.save()
     ctx.globalCompositeOperation = 'lighter'
 
-    for (const h of this.villageHouses()) {
-      const flick = 0.85 + Math.sin(t * 3 + h.x) * 0.12
-      ctx.fillStyle = `rgba(255,200,90,${dark * 0.9 * flick})`
-      ctx.fillRect(h.x - 8, h.y - 12, 4, 4)
-      ctx.fillRect(h.x + 4, h.y - 12, 4, 4)
+    if (game.villageLevel <= 3) {
+      for (const h of this.villageHouses()) {
+        const flick = 0.85 + Math.sin(t * 3 + h.x) * 0.12
+        ctx.fillStyle = `rgba(255,200,90,${dark * 0.9 * flick})`
+        ctx.fillRect(h.x - 8, h.y - 12, 4, 4)
+        ctx.fillRect(h.x + 4, h.y - 12, 4, 4)
+      }
     }
 
 
-    ctx.fillStyle = `rgba(255,150,60,${dark * 0.5})`
-    this._ellipse(ctx, C.VILLAGE.x, C.VILLAGE.y - 2, 20, 12)
+    if (game.villageLevel <= 3) {
+      ctx.fillStyle = `rgba(255,150,60,${dark * 0.5})`
+      this._ellipse(ctx, C.VILLAGE.x, C.VILLAGE.y - 2, 20, 12)
+    }
 
     for (const f of this.fireflies) {
       const gx = f.x + Math.sin(t * f.spd + f.phase) * 6

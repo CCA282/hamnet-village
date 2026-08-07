@@ -29,7 +29,11 @@ function setTab(i) {
   game.menuIndex = 0
 }
 
-const entries = computed(() => TAB_KEYS[game.menuTab].map((key) => {
+const observatoryUnlocked = computed(() => (game.buildingUpgrades.astronomy?.observatory || 0) > 0)
+
+const entries = computed(() => TAB_KEYS[game.menuTab]
+  .filter((key) => key !== 'cap_meteorite' || observatoryUnlocked.value)
+  .map((key) => {
   const def = UPGRADES[key]
   const level = game.upgrades[key]
   const cost = upgradeCost(key)
@@ -109,7 +113,7 @@ function close() {
           </span>
           <span class="stock-item" v-if="meteoritesVisible">
             <img v-if="icons.meteorite" :src="icons.meteorite" class="res-icon" />
-            {{ Math.floor(game.meteorite) }}
+            {{ Math.floor(game.meteorite) }}<span class="scap">/{{ globalCap('meteorite') }}</span>
           </span>
           <span class="dev-badge" v-if="game.devMode">⚡ DEV</span>
         </div>

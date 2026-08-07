@@ -16,7 +16,7 @@ export const game = reactive({
     speed: 0, harvest_yield: 0, harvest_speed: 0, village_lvl: 0,
     hache: 0, pioche: 0, fishing_rod: 0, faucille: 0,
     charrette: 0, bag_size: 0, cart_size: 0,
-    cap_wood: 0, cap_fish: 0, cap_stone: 0, cap_berries: 0,
+    cap_wood: 0, cap_fish: 0, cap_stone: 0, cap_berries: 0, cap_meteorite: 0,
   },
 
   // Niveaux d'amélioration par bâtiment
@@ -102,7 +102,7 @@ export function effectiveCartCapacity() {
 const TAB_KEYS = [
   ['village_lvl'],
   ['hache', 'pioche', 'fishing_rod', 'faucille'],
-  ['charrette', 'cap_wood', 'cap_fish', 'cap_stone', 'cap_berries'],
+  ['charrette', 'cap_wood', 'cap_fish', 'cap_stone', 'cap_berries', 'cap_meteorite'],
   ['speed', 'harvest_yield', 'harvest_speed', 'bag_size', 'cart_size'],
 ]
 export { TAB_KEYS }
@@ -200,7 +200,7 @@ export function resetGame() {
     speed: 0, harvest_yield: 0, harvest_speed: 0, village_lvl: 0,
     hache: 0, pioche: 0, fishing_rod: 0, faucille: 0,
     charrette: 0, bag_size: 0, cart_size: 0,
-    cap_wood: 0, cap_fish: 0, cap_stone: 0, cap_berries: 0,
+    cap_wood: 0, cap_fish: 0, cap_stone: 0, cap_berries: 0, cap_meteorite: 0,
   })
   for (const id of Object.keys(game.buildingUpgrades)) {
     Object.assign(game.buildingUpgrades[id], { storage: 0, speed: 0, transporter: 0, transporter_speed: 0 })

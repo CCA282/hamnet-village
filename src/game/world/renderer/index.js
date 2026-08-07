@@ -30,9 +30,21 @@ const coreMethods = {
 
   villageHouses() {
     const v = C.VILLAGE
-    if (game.villageLevel === 1) return []
-    if (game.villageLevel === 2) return [{ x: v.x - 20, y: v.y - 10, sprite: 'cabin' }]
-    return [{ x: v.x, y: v.y - 22, sprite: 'chalet' }]
+    if (game.villageLevel <= 1) return []
+    if (game.villageLevel === 2) return [
+      { x: v.x - 30, y: v.y - 14, sprite: 'hut_small' },  // NW
+      { x: v.x + 30, y: v.y - 14, sprite: 'hut_small' },  // NE
+      { x: v.x - 30, y: v.y + 20, sprite: 'hut_small' },  // SW
+      { x: v.x + 30, y: v.y + 20, sprite: 'hut_small' },  // SE
+    ]
+    if (game.villageLevel === 3) return [
+      { x: v.x - 40, y: v.y - 16, sprite: 'chalet' },     // NW
+      { x: v.x + 40, y: v.y - 16, sprite: 'cabin' },       // NE
+      { x: v.x - 40, y: v.y + 30, sprite: 'cabin' },       // SW
+      { x: v.x + 40, y: v.y + 30, sprite: 'hut_small' },  // SE
+    ]
+    // Level 4 — donjon seul, pas de maisons
+    return [{ x: v.x, y: v.y + 30, sprite: 'castle', scale: 4 }]
   },
 
   render(ctx) {
@@ -64,8 +76,12 @@ const coreMethods = {
       const def = C.BUILDINGS[spot.building]
       if (game.buildings[spot.building] > 0 || game.villageLevel < def.requiresLevel) continue
       const near = this.players.some((p) => Math.hypot(p.x - spot.x, p.y - spot.y) < nearDist)
-      this.drawBuildMarker(ctx, spot, t, near)  // draws marker + ghost, NOT the cost panel
+      this.drawBuildMarker(ctx, spot, t, near)
     }
+
+    // Village fortifications back (north + sides — behind entities)
+    if (game.villageLevel === 3) this.drawVillagePalisadeBack(ctx, C.VILLAGE)
+    if (game.villageLevel >= 4) this.drawVillageCastleBack(ctx, C.VILLAGE)
 
     // Halos under entities
     for (const p of this.players) {
@@ -88,15 +104,22 @@ const coreMethods = {
       ents.push({ y: ty, draw: () => this.drawTelescope(ctx, tx, ty, t) })
     }
     for (const d of this.deer) ents.push({ y: d.y, draw: () => this.drawDeer(ctx, d) })
-    for (const h of this.villageHouses()) ents.push({ y: h.y, draw: () => this.drawBottom(ctx, sprite(h.sprite), h.x, h.y) })
-    if (game.villageLevel >= 3) {
-      const v = C.VILLAGE
-      ents.push({ y: v.y - 8, draw: () => this.drawBottom(ctx, sprite('bush'), v.x - 30, v.y - 8, { scale: 0.7 }) })
-      ents.push({ y: v.y - 8, draw: () => this.drawBottom(ctx, sprite('bush'), v.x + 28, v.y - 8, { scale: 0.7 }) })
-      ents.push({ y: v.y - 12, draw: () => this.drawBottom(ctx, sprite('flower_pink'), v.x - 18, v.y - 12) })
-      ents.push({ y: v.y - 12, draw: () => this.drawBottom(ctx, sprite('flower_white'), v.x + 16, v.y - 12) })
+    for (const h of this.villageHouses()) {
+      const opts = h.scale ? { scale: h.scale } : {}
+      ents.push({ y: h.y, draw: () => this.drawBottom(ctx, sprite(h.sprite), h.x, h.y, opts) })
     }
-    ents.push({ y: C.VILLAGE.y + 4, draw: () => this.drawCampfire(ctx, t) })
+    if (game.villageLevel === 3) {
+      const v = C.VILLAGE
+      ents.push({ y: v.y - 10, draw: () => this.drawBottom(ctx, sprite('bush'), v.x - 44, v.y - 10, { scale: 0.7 }) })
+      ents.push({ y: v.y - 10, draw: () => this.drawBottom(ctx, sprite('bush'), v.x + 40, v.y - 10, { scale: 0.7 }) })
+      ents.push({ y: v.y - 14, draw: () => this.drawBottom(ctx, sprite('flower_pink'), v.x - 18, v.y - 14) })
+      ents.push({ y: v.y - 14, draw: () => this.drawBottom(ctx, sprite('flower_white'), v.x + 16, v.y - 14) })
+    }
+    if (game.villageLevel <= 3) ents.push({ y: C.VILLAGE.y + 4, draw: () => this.drawCampfire(ctx, t) })
+
+    // Fortification front walls (south — depth-sorted in front of village interior)
+    if (game.villageLevel === 3) ents.push({ y: C.VILLAGE.y + 52, draw: () => this.drawVillagePalisadeFront(ctx, C.VILLAGE) })
+    if (game.villageLevel >= 4) ents.push({ y: C.VILLAGE.y + 52, draw: () => this.drawVillageCastleFront(ctx, C.VILLAGE) })
     for (const spot of C.BUILD_SPOTS) {
       if (game.buildings[spot.building] > 0) {
         const def = C.BUILDINGS[spot.building]

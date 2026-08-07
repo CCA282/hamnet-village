@@ -1,6 +1,59 @@
 import { C } from '../palette.js'
 
 export const villageDefs = {
+  castle: {
+    rows: [
+      'SSS..SSS..SS..SSS..SSS',
+      'SSSSSSSSSSSSSSSSSSSSSS',
+      'SSSoSSSSSSSSSSSSSSoSSS',
+      'SSSSSggSSSSSSSggSSSSSS',
+      'SSSSSggSSSSSSSggSSSSSS',
+      'SSSSSSSSSSSSSSSSSSSSSS',
+      'SSSoSSSSSSSSSSSSSSoSSS',
+      'SSSSSSSSSSSSSSSSSSSSSS',
+      'SSSSSSSSSdDDdSSSSSSSSS',
+      'SSSSSSSSSdDDdSSSSSSSSS',
+      'SSSSSSSSSdDDdSSSSSSSSS',
+      'SSSSSSSSSdDDdSSSSSSSSS',
+      'SSSSSSSSSdDDdSSSSSSSSS',
+      'ssssssssssssssssssssss',
+      'ssssssssssssssssssssss',
+      'ssssssssssssssssssssss',
+    ],
+    pal: {
+      S: '#b0b2be',
+      s: '#7e8090',
+      o: '#1a1828',
+      g: C.glass,
+      d: '#3a2840',
+      D: '#0e0c18',
+    },
+  },
+  hut_small: {
+    rows: [
+      '.......RR.......',
+      '......RRRR......',
+      '.....RRRRRR.....',
+      '....RRRRRRRR....',
+      '...RRRRRRRRRR...',
+      '..RRRRRRRRRRRR..',
+      '.rrrrrrrrrrrrrr.',
+      '.WWWWWWWWWWWWWW.',
+      '.WwWWGgWWDDWWwW.',
+      '.WwWWGgWWDDWWwW.',
+      '.WwWWWWWWWWWWwW.',
+      '.wwwwwwwwwwwwww.',
+    ],
+    pal: {
+      R: C.roofbrown,
+      r: C.roofbrown_d,
+      W: C.wood,
+      w: C.wood_d,
+      G: C.wood_d,
+      g: C.glass,
+      D: C.door,
+    },
+  },
   campfire: {
     rows: [
       '..........',

@@ -201,6 +201,158 @@ export const worldElementMethods = {
     ctx.textAlign = 'left'
   },
 
+  // ── Village fortifications ────────────────────────────────────────────────
+
+  _villageStake(ctx, sx, sy) {
+    const sH = 10, sW = 3
+    ctx.fillStyle = '#3e2008'
+    ctx.fillRect(sx + 1, sy - sH, 1, 1)          // pointed tip
+    ctx.fillStyle = '#d4a050'
+    ctx.fillRect(sx, sy - sH + 1, sW, 3)          // cut wood (pale)
+    ctx.fillStyle = '#8a5c24'
+    ctx.fillRect(sx, sy - sH + 4, sW, sH - 5)    // body
+    ctx.fillStyle = '#5a3810'
+    ctx.fillRect(sx, sy - 1, sW, 1)               // base
+    ctx.fillStyle = '#5a3810'
+    ctx.fillRect(sx + 1, sy - sH + 1, 1, sH - 2) // grain
+  },
+
+  _palisadeRail(ctx, rx, ry, rw) {
+    if (rw <= 0) return
+    ctx.fillStyle = '#5a3810'
+    ctx.fillRect(rx, ry - 4, rw, 1)
+    ctx.fillStyle = '#8a5c24'
+    ctx.fillRect(rx, ry - 3, rw, 1)
+  },
+
+  drawVillagePalisadeBack(ctx, v) {
+    const x0 = v.x - 62, x1 = v.x + 62
+    const y0 = v.y - 38
+    const y1 = v.y + 52
+    const gH = 18, sW = 3, sStep = 5
+
+    // North wall
+    for (let sx = x0; sx <= x1 - sW; sx += sStep) {
+      if (sx + 1 > v.x - gH && sx < v.x + gH) continue
+      this._villageStake(ctx, sx, y0)
+    }
+    this._palisadeRail(ctx, x0, y0, v.x - gH - x0)
+    this._palisadeRail(ctx, v.x + gH, y0, x1 - (v.x + gH))
+
+    // West wall
+    for (let sy = y0 + sStep; sy < y1; sy += sStep) {
+      if (sy > v.y - gH && sy < v.y + gH) continue
+      this._villageStake(ctx, x0, sy)
+    }
+    // East wall
+    for (let sy = y0 + sStep; sy < y1; sy += sStep) {
+      if (sy > v.y - gH && sy < v.y + gH) continue
+      this._villageStake(ctx, x1 - sW, sy)
+    }
+  },
+
+  drawVillagePalisadeFront(ctx, v) {
+    const x0 = v.x - 62, x1 = v.x + 62
+    const y1 = v.y + 52
+    const gH = 18, sW = 3, sStep = 5
+
+    for (let sx = x0; sx <= x1 - sW; sx += sStep) {
+      if (sx + 1 > v.x - gH && sx < v.x + gH) continue
+      this._villageStake(ctx, sx, y1)
+    }
+    this._palisadeRail(ctx, x0, y1, v.x - gH - x0)
+    this._palisadeRail(ctx, v.x + gH, y1, x1 - (v.x + gH))
+  },
+
+  _castleWallH(ctx, x, y, w) {
+    if (w <= 0) return
+    const wH = 9, mH = 5, mW = 5, cW = 4
+    // Wall body
+    ctx.fillStyle = '#a8aab8'
+    ctx.fillRect(x, y - wH, w, wH)
+    // Stone block courses (horizontal mortar)
+    ctx.fillStyle = '#6e7080'
+    ctx.fillRect(x, y - wH + 3, w, 1)
+    ctx.fillRect(x, y - wH + 6, w, 1)
+    // Vertical joints (upper course)
+    for (let jx = x + 3; jx < x + w; jx += 8) {
+      ctx.fillRect(jx, y - wH, 1, 3)
+    }
+    // Vertical joints (lower course, offset)
+    for (let jx = x + 7; jx < x + w; jx += 8) {
+      ctx.fillRect(jx, y - wH + 4, 1, 3)
+    }
+    // Bottom shadow
+    ctx.fillStyle = '#5a5c6e'
+    ctx.fillRect(x, y - 1, w, 1)
+    // Battlements (merlons)
+    for (let mx = x; mx < x + w; mx += mW + cW) {
+      const mEnd = Math.min(mx + mW, x + w)
+      ctx.fillStyle = '#b8bac8'
+      ctx.fillRect(mx, y - wH - mH, mEnd - mx, mH)
+      ctx.fillStyle = '#6e7080'
+      ctx.fillRect(mx, y - wH - 1, mEnd - mx, 1)
+    }
+  },
+
+  _castleTower(ctx, tx, ty) {
+    const tW = 11, tH = 18
+    // Shadow
+    ctx.fillStyle = '#5a5c6e'
+    ctx.fillRect(tx + tW, ty - tH + 2, 2, tH)
+    // Body
+    ctx.fillStyle = '#a0a2b0'
+    ctx.fillRect(tx, ty - tH, tW, tH)
+    // Stone courses
+    ctx.fillStyle = '#6e7080'
+    for (let cy = ty - tH + 4; cy < ty; cy += 5) ctx.fillRect(tx, cy, tW, 1)
+    // Vertical joints
+    for (let jx = tx + 2; jx < tx + tW; jx += 5) ctx.fillRect(jx, ty - tH, 1, 4)
+    for (let jx = tx + 4; jx < tx + tW; jx += 5) ctx.fillRect(jx, ty - tH + 5, 1, 4)
+    // Face shadow (right edge)
+    ctx.fillStyle = '#5a5c6e'
+    ctx.fillRect(tx + tW - 1, ty - tH, 1, tH)
+    // Battlements
+    ctx.fillStyle = '#b0b2c0'
+    ctx.fillRect(tx,     ty - tH - 4, 4, 4)
+    ctx.fillRect(tx + 7, ty - tH - 4, 4, 4)
+    ctx.fillStyle = '#6e7080'
+    ctx.fillRect(tx, ty - tH, tW, 1)
+  },
+
+  drawVillageCastleBack(ctx, v) {
+    const x0 = v.x - 76, x1 = v.x + 76
+    const y0 = v.y - 46, y1 = v.y + 52
+    const gH = 15, tW = 11
+
+    // Side walls (thin strips)
+    ctx.fillStyle = '#8890a0'
+    ctx.fillRect(x0, y0, 3, y1 - y0)
+    ctx.fillRect(x1 - 3, y0, 3, y1 - y0)
+
+    // North wall segments (between towers, excluding gate)
+    this._castleWallH(ctx, x0 + tW, y0, v.x - gH - (x0 + tW))
+    this._castleWallH(ctx, v.x + gH, y0, x1 - tW - (v.x + gH))
+
+    // North towers
+    this._castleTower(ctx, x0 - 2, y0)
+    this._castleTower(ctx, x1 - tW + 2, y0)
+  },
+
+  drawVillageCastleFront(ctx, v) {
+    const x0 = v.x - 76, x1 = v.x + 76
+    const y1 = v.y + 52
+    const gH = 15, tW = 11
+
+    // South wall segments
+    this._castleWallH(ctx, x0 + tW, y1, v.x - gH - (x0 + tW))
+    this._castleWallH(ctx, v.x + gH, y1, x1 - tW - (v.x + gH))
+
+    // South towers
+    this._castleTower(ctx, x0 - 2, y1)
+    this._castleTower(ctx, x1 - tW + 2, y1)
+  },
+
   drawMeteorite(ctx, m) {
     if (m.impactT > 0) {
       const progress = 1 - m.impactT / 1.8
