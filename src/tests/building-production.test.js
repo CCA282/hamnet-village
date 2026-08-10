@@ -24,6 +24,7 @@ function makeCtx(overrides = {}) {
     carts: [],
     autoTransporters: [],
     prodTimers: { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 },
+    _lastProduced: [],
     buildingInventories: {
       lumberjack: { wood: 0 },
       fishinghut: { fish: 0 },
@@ -60,6 +61,21 @@ describe('updateBuildings — production', () => {
     game.buildings.lumberjack = 1
     w.updateBuildings(LUMBERJACK_BASE_INTERVAL + 0.1)
     expect(w.buildingInventories.lumberjack.wood).toBe(1)
+  })
+
+  it('pushes building id to _lastProduced when it produces', () => {
+    const w = makeCtx()
+    game.buildings.lumberjack = 1
+    w.updateBuildings(LUMBERJACK_BASE_INTERVAL + 0.1)
+    expect(w._lastProduced).toContain('lumberjack')
+  })
+
+  it('does not push to _lastProduced when building is at max storage', () => {
+    const w = makeCtx()
+    game.buildings.lumberjack = 1
+    w.buildingInventories.lumberjack.wood = BUILDINGS.lumberjack.storageMax
+    w.updateBuildings(LUMBERJACK_BASE_INTERVAL + 0.1)
+    expect(w._lastProduced).not.toContain('lumberjack')
   })
 
   it('does not exceed storageMax', () => {

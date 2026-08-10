@@ -52,6 +52,7 @@ export function serializeWorld(world, { includeSpotsState = false } = {}) {
 
     _nextId: world._nextId,
     devMode: game.devMode,
+    lastProduced: world._lastProduced ? [...world._lastProduced] : [],
   }
 
   if (includeSpotsState) {
@@ -139,6 +140,18 @@ export function applyWorldState(world, snap) {
 
   if (snap.devMode !== undefined) game.devMode = snap.devMode
 
+  // Production icons: use lastProduced events so the icon fires even when the
+  // auto-transporter picks up in the same frame (net inventory delta = 0).
+  if (snap.lastProduced?.length) {
+    for (const id of snap.lastProduced) {
+      const def = BUILDINGS[id]
+      const spot = BUILD_SPOTS.find((s) => s.building === id)
+      if (def && spot && BUILDING_ICON_MAP[def.produces]) {
+        world.spawnIcon(BUILDING_ICON_MAP[def.produces], spot.x, spot.y - 18)
+      }
+    }
+  }
+
   if (snap.buildingInventories) {
     for (const [id, newInv] of Object.entries(snap.buildingInventories)) {
       const def = BUILDINGS[id]
@@ -147,9 +160,8 @@ export function applyWorldState(world, snap) {
         const oldAmt = (world.buildingInventories[id] || {})[res] || 0
         const newAmt = newInv[res] || 0
         const spot = BUILD_SPOTS.find((s) => s.building === id)
-        if (spot && newAmt > oldAmt) {
-          world.spawnIcon(BUILDING_ICON_MAP[res], spot.x, spot.y - 18)
-        } else if (spot && newAmt < oldAmt) {
+        // Spawn pickup icon when inventory decreases (player/transporter collected)
+        if (spot && newAmt < oldAmt) {
           world.spawnIcon(BUILDING_ICON_MAP[res], spot.x + (Math.random() - 0.5) * 8, spot.y - 14)
         }
       }

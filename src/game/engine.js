@@ -85,6 +85,7 @@ class Engine {
     if (this._syncTimer >= 0.033) {
       this._syncTimer = 0
       const snap = serializeWorld(this.world, { includeSpotsState: true })
+      this.world._lastProduced = []
       send({ type: 'state', data: snap })
     }
   }

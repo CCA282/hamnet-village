@@ -164,3 +164,52 @@ describe('applyWorldState — cart deposit particles', () => {
     expect(world.spawnIcon).not.toHaveBeenCalledWith('icon_wood', expect.any(Number), expect.any(Number))
   })
 })
+
+// ── Building production icon via lastProduced (Bug #5) ────────────────────────
+
+describe('applyWorldState — lastProduced production icons', () => {
+  it('spawns production icon for each id in lastProduced', () => {
+    const world = makeWorld()
+    applyWorldState(world, makeSnap({
+      buildingInventories: { lumberjack: { wood: 0 } },
+      lastProduced: ['lumberjack'],
+    }))
+    expect(world.spawnIcon).toHaveBeenCalledWith('icon_wood', expect.any(Number), expect.any(Number))
+  })
+
+  it('spawns icon even when building inventory has no net change (transporter same frame)', () => {
+    // Simulate: production and pickup happen in same host frame
+    // Before: 0 wood, after: 0 wood → oldAmt === newAmt → no delta icon
+    // But lastProduced=['lumberjack'] → icon should still fire
+    const world = makeWorld()
+    world.buildingInventories = { lumberjack: { wood: 0 } }
+    applyWorldState(world, makeSnap({
+      buildingInventories: { lumberjack: { wood: 0 } },
+      lastProduced: ['lumberjack'],
+    }))
+    expect(world.spawnIcon).toHaveBeenCalledWith('icon_wood', expect.any(Number), expect.any(Number))
+  })
+
+  it('does not spawn icon when lastProduced is empty', () => {
+    const world = makeWorld()
+    applyWorldState(world, makeSnap({
+      buildingInventories: { lumberjack: { wood: 1 } },
+      lastProduced: [],
+    }))
+    // No production icons — only potential pickup icons (here inventory increased, so none)
+    const woodCalls = world.spawnIcon.mock.calls.filter((c) => c[0] === 'icon_wood')
+    expect(woodCalls).toHaveLength(0)
+  })
+
+  it('spawns pickup icon (not production icon) when inventory decreases without lastProduced', () => {
+    // Simulate: auto-transporter picked up from lumberjack without production this frame
+    const world = makeWorld()
+    world.buildingInventories = { lumberjack: { wood: 2 } }
+    applyWorldState(world, makeSnap({
+      buildingInventories: { lumberjack: { wood: 1 } },
+      lastProduced: [],
+    }))
+    // inventory went down → pickup icon spawned (at spot position)
+    expect(world.spawnIcon).toHaveBeenCalledWith('icon_wood', expect.any(Number), expect.any(Number))
+  })
+})

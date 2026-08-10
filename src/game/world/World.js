@@ -53,6 +53,7 @@ export class World {
     this.squirrels = []
 
     this.prodTimers = { lumberjack: 0, fishinghut: 0, quarry: 0, garden: 0, astronomy: 0 }
+    this._lastProduced = []
     this.buildingInventories = {}
     for (const [id, def] of Object.entries(C.BUILDINGS)) {
       if (def.produces) this.buildingInventories[id] = { [def.produces]: 0 }

@@ -18,6 +18,7 @@ export const buildingMethods = {
       inv[def.produces] = Math.min(current + def.amount, effectiveStorageMax(id))
       const spot = C.BUILD_SPOTS.find((s) => s.building === id)
       this.spawnIcon(ICON_MAP[def.produces], spot.x, spot.y - 18)
+      this._lastProduced.push(id)
     }
   },
 
