@@ -7,6 +7,7 @@ import JoinHint from './components/JoinHint.vue'
 import TouchControls from './components/TouchControls.vue'
 import Lobby from './components/Lobby.vue'
 import TelescopeModal from './components/TelescopeModal.vue'
+import Objectives from './components/Objectives.vue'
 import { netState } from './net/netState.js'
 import { computed } from 'vue'
 
@@ -21,6 +22,7 @@ const inGame = computed(() => netState.mode !== null)
       <Hud />
       <JoinHint />
       <TouchControls />
+      <Objectives />
       <VillageMenu />
       <BuildingMenu />
       <TelescopeModal />
