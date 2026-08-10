@@ -5,6 +5,7 @@ import { connect, send, onMsg, disconnect, wsUrl } from '../net/socket.js'
 import { serializeWorld, applyWorldState, listLocalSaves, loadLocal, deleteLocal, listServerSaves, loadServer } from '../net/sync.js'
 import { engine } from '../game/engine.js'
 import { game } from '../game/store.js'
+import { clipboardCopy } from '../utils/clipboard.js'
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -170,7 +171,7 @@ async function joinRoom() {
 const codeCopied = ref(false)
 async function copyCode() {
   if (!displayCode.value) return
-  try { await navigator.clipboard.writeText(displayCode.value) } catch {}
+  await clipboardCopy(displayCode.value)
   codeCopied.value = true
   setTimeout(() => { codeCopied.value = false }, 2000)
 }

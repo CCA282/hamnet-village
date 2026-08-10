@@ -5,8 +5,10 @@ import { spriteUrl } from '../game/sprites/index.js'
 import { netState } from '../net/netState.js'
 import { saveLocal, saveServer } from '../net/sync.js'
 import { engine } from '../game/engine.js'
+import { clipboardCopy } from '../utils/clipboard.js'
 
 const displayHint = computed(() => {
+  if (game.hintOverride) return game.hintOverride
   if (netState.mode === 'guest') {
     const myPlayer = game.players.find((p) => p.id === netState.myPlayerId)
     return myPlayer?.hint ?? ''
@@ -52,10 +54,8 @@ function confirmQuit() { engine.reset() }
 
 async function copyRoomCode() {
   if (!netState.roomCode) return
-  try {
-    await navigator.clipboard.writeText(netState.roomCode)
-    flash('Code copié !')
-  } catch { flash(netState.roomCode) }
+  await clipboardCopy(netState.roomCode)
+  flash('Code copié !')
 }
 
 const woodPerSec = computed(() =>
