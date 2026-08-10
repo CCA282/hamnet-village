@@ -110,7 +110,12 @@ const TAB_KEYS = [
 export { TAB_KEYS }
 
 export function menuEntries() {
-  return TAB_KEYS[game.menuTab] || TAB_KEYS[0]
+  return (TAB_KEYS[game.menuTab] || TAB_KEYS[0]).filter((key) => {
+    const def = UPGRADES[key]
+    if (!def) return true
+    if (def.requiresLevel && game.villageLevel < def.requiresLevel) return false
+    return true
+  })
 }
 
 // ── Upgrades bâtiment ─────────────────────────────────────────────────────────

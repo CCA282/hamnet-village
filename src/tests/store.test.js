@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { vi } from 'vitest'
 vi.mock('vue', () => ({ reactive: (obj) => obj }))
 
-const { upgradeCost, globalCap, game } = await import('../game/store.js')
+const { upgradeCost, globalCap, menuEntries, game } = await import('../game/store.js')
 
 describe('upgradeCost', () => {
   beforeEach(() => {
@@ -38,6 +38,35 @@ describe('upgradeCost', () => {
     expect(upgradeCost('village_lvl')).toEqual({ wood: 40, fish: 25 })
     game.upgrades.village_lvl = 1
     expect(upgradeCost('village_lvl')).toEqual({ wood: 60, berries: 20, stone: 30 })
+  })
+})
+
+describe('menuEntries — requiresLevel filtering', () => {
+  beforeEach(() => {
+    game.menuTab = 1 // outils tab (contains pioche_stellaire)
+    game.villageLevel = 1
+  })
+
+  it('hides pioche_stellaire at village level 1', () => {
+    game.villageLevel = 1
+    expect(menuEntries()).not.toContain('pioche_stellaire')
+  })
+
+  it('hides pioche_stellaire at village level 2', () => {
+    game.villageLevel = 2
+    expect(menuEntries()).not.toContain('pioche_stellaire')
+  })
+
+  it('shows pioche_stellaire at village level 3', () => {
+    game.villageLevel = 3
+    expect(menuEntries()).toContain('pioche_stellaire')
+  })
+
+  it('shows other tools (hache, pioche) at village level 1', () => {
+    game.villageLevel = 1
+    const entries = menuEntries()
+    expect(entries).toContain('hache')
+    expect(entries).toContain('pioche')
   })
 })
 

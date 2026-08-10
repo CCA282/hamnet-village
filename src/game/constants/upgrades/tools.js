@@ -23,6 +23,7 @@ export const upgradesTools = {
     costs: [{ stone: 40, meteorite: 8 }],
     repeatable: false,
     max: 1,
+    requiresLevel: 3,
   },
   fishing_rod: {
     name: '🎣 Canne à pêche',
