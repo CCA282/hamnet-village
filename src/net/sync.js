@@ -1,5 +1,7 @@
 import { game } from '../game/store.js'
-import { BUILDINGS, BUILD_SPOTS } from '../game/constants/index.js'
+import { BUILDINGS, BUILD_SPOTS, VILLAGE } from '../game/constants/index.js'
+
+const RESOURCES = ['wood', 'fish', 'stone', 'berries', 'meteorite']
 
 const BUILDING_ICON_MAP = { wood: 'icon_wood', fish: 'icon_fish', stone: 'icon_stone', berries: 'icon_berries' }
 
@@ -93,10 +95,17 @@ export function applyWorldState(world, snap) {
       } else {
         // Existing player: update everything except x/y (those lerp in updateGuestVisuals)
         const { x, y, targetHalo, ...rest } = sp
+        const prevInv = { ...p.inventory }
         Object.assign(p, rest)
         p.targetX = x
         p.targetY = y
         p.target = targetHalo ?? null
+        // Spawn deposit particles when player inventory decreases (deposited at village)
+        for (const res of RESOURCES) {
+          if ((prevInv[res] || 0) > (p.inventory[res] || 0)) {
+            world.spawnIcon(`icon_${res}`, sp.x + (Math.random() - 0.5) * 10, sp.y - 16)
+          }
+        }
       }
     }
     world._nextId = snap._nextId ?? world._nextId
@@ -109,7 +118,18 @@ export function applyWorldState(world, snap) {
     world.carts = world.carts.filter((c) => ids.has(c.id))
     for (const sc of snap.carts) {
       let c = world.carts.find((c) => c.id === sc.id)
-      if (!c) { world.carts.push({ ...sc }) } else { Object.assign(c, sc) }
+      if (!c) {
+        world.carts.push({ ...sc })
+      } else {
+        const prevInv = { ...c.inventory }
+        Object.assign(c, sc)
+        // Spawn deposit particles when cart inventory decreases (deposited at village)
+        for (const res of RESOURCES) {
+          if ((prevInv[res] || 0) > (c.inventory[res] || 0)) {
+            world.spawnIcon(`icon_${res}`, VILLAGE.x + (Math.random() - 0.5) * 20, VILLAGE.y - 22)
+          }
+        }
+      }
     }
   }
 
