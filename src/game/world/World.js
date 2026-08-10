@@ -154,11 +154,20 @@ export class World {
       p.target = this.computeTarget(p)
       p.harvestCd = Math.max(0, p.harvestCd - dt)
 
+      // While holding, lock target kind to the initial press so that a depleted
+      // resource (tree/stone/…) can't hand off the held click to a nearby cart.
+      if (!st.action && st.actionHeld && p._heldActionKind) {
+        if (p.target?.kind !== p._heldActionKind) p.target = null
+      } else if (!st.action && !st.actionHeld) {
+        p._heldActionKind = null
+      }
+
       // Remote players have their own per-player menu state (already checked above);
       // only gate local players on the global game.menuOpen flag.
       const localMenuBlocking = p.source !== 'remote' && game.menuOpen
       if (!localMenuBlocking) {
         if (st.action) {
+          p._heldActionKind = p.target?.kind ?? null
           this.doAction(p, true)
           // Remote input stays true for the full 33ms packet; consume it so
           // the next host frame doesn't trigger a second action.

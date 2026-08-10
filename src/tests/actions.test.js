@@ -497,3 +497,62 @@ describe('doAction — building menu', () => {
     expect(game.buildingMenuOpen).toBe(false)
   })
 })
+
+// ── _heldActionKind: held-click target lock ────────────────────────────────────
+//
+// The World update loop sets p._heldActionKind on initial press and clears
+// p.target when the held target kind changes, preventing a depleted resource
+// from handing off the held click to a nearby cart or other object.
+
+function simulateHoldFrame(p, st) {
+  // Mirrors the World.js update block for _heldActionKind
+  if (!st.action && st.actionHeld && p._heldActionKind) {
+    if (p.target?.kind !== p._heldActionKind) p.target = null
+  } else if (!st.action && !st.actionHeld) {
+    p._heldActionKind = null
+  }
+  if (!game.menuOpen) {
+    if (st.action) {
+      p._heldActionKind = p.target?.kind ?? null
+    }
+  }
+}
+
+describe('_heldActionKind — held-click target lock', () => {
+  it('records target kind on initial press', () => {
+    const p = makePlayer()
+    p.target = { kind: 'chop' }
+    simulateHoldFrame(p, { action: true, actionHeld: false })
+    expect(p._heldActionKind).toBe('chop')
+  })
+
+  it('nullifies target when kind changes while holding', () => {
+    const p = makePlayer({ _heldActionKind: 'chop' })
+    p.target = { kind: 'cart' } // changed to cart after tree depleted
+    simulateHoldFrame(p, { action: false, actionHeld: true })
+    expect(p.target).toBeNull()
+  })
+
+  it('keeps target when kind is the same while holding', () => {
+    const tree = { kind: 'chop', hp: 2 }
+    const p = makePlayer({ _heldActionKind: 'chop' })
+    p.target = tree
+    simulateHoldFrame(p, { action: false, actionHeld: true })
+    expect(p.target).toBe(tree)
+  })
+
+  it('clears _heldActionKind when button is released', () => {
+    const p = makePlayer({ _heldActionKind: 'chop' })
+    p.target = null
+    simulateHoldFrame(p, { action: false, actionHeld: false })
+    expect(p._heldActionKind).toBeNull()
+  })
+
+  it('does not clear target when no prior kind is locked (initial null)', () => {
+    const p = makePlayer({ _heldActionKind: null })
+    p.target = { kind: 'cart' }
+    simulateHoldFrame(p, { action: false, actionHeld: true })
+    // No lock → target unchanged (fresh press will set kind next frame)
+    expect(p.target).not.toBeNull()
+  })
+})
