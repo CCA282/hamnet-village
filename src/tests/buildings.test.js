@@ -6,9 +6,11 @@ describe('BUILDINGS definitions', () => {
     for (const [id, def] of Object.entries(BUILDINGS)) {
       expect(def.name, `${id}.name`).toBeTruthy()
       expect(def.sprite, `${id}.sprite`).toBeTruthy()
-      expect(def.produces, `${id}.produces`).toMatch(/^(wood|fish|stone|berries)$/)
-      expect(def.amount, `${id}.amount`).toBeGreaterThan(0)
-      expect(def.interval, `${id}.interval`).toBeGreaterThan(0)
+      if (!def.noProduction) {
+        expect(def.produces, `${id}.produces`).toMatch(/^(wood|fish|stone|berries|meteorite)$/)
+        expect(def.amount, `${id}.amount`).toBeGreaterThan(0)
+        expect(def.interval, `${id}.interval`).toBeGreaterThan(0)
+      }
       expect(def.requiresLevel, `${id}.requiresLevel`).toBeGreaterThanOrEqual(1)
     }
   })
@@ -36,9 +38,10 @@ describe('BUILDINGS definitions', () => {
     }
   })
 
-  it('requiresLevel is 1, 2 or 3', () => {
+  it('requiresLevel is between 1 and 4', () => {
     for (const [id, def] of Object.entries(BUILDINGS)) {
-      expect([1, 2, 3], `${id}.requiresLevel`).toContain(def.requiresLevel)
+      expect(def.requiresLevel, `${id}.requiresLevel`).toBeGreaterThanOrEqual(1)
+      expect(def.requiresLevel, `${id}.requiresLevel`).toBeLessThanOrEqual(4)
     }
   })
 })

@@ -37,7 +37,7 @@ describe('upgradeCost', () => {
     game.upgrades.village_lvl = 0
     expect(upgradeCost('village_lvl')).toEqual({ wood: 40, fish: 25 })
     game.upgrades.village_lvl = 1
-    expect(upgradeCost('village_lvl')).toEqual({ wood: 60, fish: 20, stone: 30 })
+    expect(upgradeCost('village_lvl')).toEqual({ wood: 60, berries: 20, stone: 30 })
   })
 })
 
