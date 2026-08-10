@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { vi } from 'vitest'
 vi.mock('vue', () => ({ reactive: (obj) => obj }))
 
-const { upgradeCost, globalCap, menuEntries, game } = await import('../game/store.js')
+const { upgradeCost, globalCap, menuEntries, canUpgradeVillage, game } = await import('../game/store.js')
 
 describe('upgradeCost', () => {
   beforeEach(() => {
@@ -38,6 +38,35 @@ describe('upgradeCost', () => {
     expect(upgradeCost('village_lvl')).toEqual({ wood: 40, fish: 25 })
     game.upgrades.village_lvl = 1
     expect(upgradeCost('village_lvl')).toEqual({ wood: 60, berries: 20, stone: 30 })
+  })
+})
+
+describe('canUpgradeVillage', () => {
+  beforeEach(() => {
+    game.upgrades.village_lvl = 0
+    game.wood = 0; game.fish = 0
+    game.devMode = false
+  })
+
+  it('returns false when resources are insufficient', () => {
+    game.wood = 0; game.fish = 0
+    expect(canUpgradeVillage()).toBe(false)
+  })
+
+  it('returns true when resources meet the level-1 upgrade cost', () => {
+    game.wood = 40; game.fish = 25
+    expect(canUpgradeVillage()).toBe(true)
+  })
+
+  it('returns false when village is already at max level', () => {
+    game.upgrades.village_lvl = 3 // max
+    game.wood = 9999; game.fish = 9999; game.stone = 9999; game.berries = 9999; game.meteorite = 9999
+    expect(canUpgradeVillage()).toBe(false)
+  })
+
+  it('returns true in devMode regardless of resources', () => {
+    game.devMode = true
+    expect(canUpgradeVillage()).toBe(true)
   })
 })
 

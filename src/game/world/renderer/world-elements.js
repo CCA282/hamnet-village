@@ -1,5 +1,5 @@
 import * as C from '../../constants/index.js'
-import { game, canBuild, effectiveStorageMax } from '../../store.js'
+import { game, canBuild, canAfford, upgradeCost, upgradeMaxed, effectiveStorageMax } from '../../store.js'
 import { sprite } from '../../sprites/index.js'
 
 const TWO_PI = Math.PI * 2
@@ -467,6 +467,41 @@ export const worldElementMethods = {
         }
       } else { ctx.restore() }
     }
+    ctx.restore()
+  },
+
+  drawVillageUpgradeIndicator(ctx, t) {
+    if (upgradeMaxed('village_lvl')) return
+    if (!canAfford(upgradeCost('village_lvl'))) return
+
+    const bx = C.VILLAGE.x
+    const bounce = Math.sin(t * 4) * 2
+    const by = C.VILLAGE.y - 52 + bounce
+
+    ctx.save()
+    ctx.font = 'bold 9px monospace'
+    ctx.textAlign = 'center'
+
+    // Outer glow ring
+    const pulse = 0.55 + 0.25 * Math.sin(t * 4)
+    ctx.fillStyle = `rgba(255,220,30,${pulse * 0.25})`
+    ctx.beginPath()
+    ctx.arc(bx, by - 2, 7, 0, Math.PI * 2)
+    ctx.fill()
+
+    // Dark background circle
+    ctx.fillStyle = 'rgba(30,20,5,0.78)'
+    ctx.beginPath()
+    ctx.arc(bx, by - 2, 5, 0, Math.PI * 2)
+    ctx.fill()
+
+    // Shadow text
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'
+    ctx.fillText('!', bx + 0.5, by + 2.5)
+    // Gold text
+    ctx.fillStyle = '#FFD700'
+    ctx.fillText('!', bx, by + 2)
+
     ctx.restore()
   },
 }

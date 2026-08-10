@@ -88,6 +88,10 @@ export function upgradeMaxed(key) {
   return game.upgrades[key] >= UPGRADES[key].max
 }
 
+export function canUpgradeVillage() {
+  return !upgradeMaxed('village_lvl') && canAfford(upgradeCost('village_lvl'))
+}
+
 export function globalCap(res) {
   const lvl = game.upgrades['cap_' + res] || 0
   return GLOBAL_CAPACITY_LEVELS[Math.min(lvl, GLOBAL_CAPACITY_LEVELS.length - 1)]
