@@ -16,34 +16,42 @@ const OBJECTIVES = {
     { id: 'fishing_rod', label: 'Acheter la canne à pêche',     done: () => game.upgrades.fishing_rod >= 1 },
     { id: 'fishinghut',  label: 'Construire le ponton de pêche', done: () => game.buildings.fishinghut > 0 },
     { id: 'pioche',      label: 'Acheter la pioche',             done: () => game.upgrades.pioche >= 1 },
-    { id: 'quarry',      label: 'Construire la carrière',        done: () => game.buildings.quarry > 0 },
     { id: 'charrette',   label: 'Acheter une charrette',         done: () => game.upgrades.charrette >= 1 },
     { id: 'village_3',   label: 'Améliorer le village (niv. 3)', done: () => game.villageLevel >= 3 },
   ],
   3: [
     { id: 'faucille',    label: 'Acheter la faucille',           done: () => game.upgrades.faucille >= 1 },
+    { id: 'quarry',      label: 'Construire la carrière',        done: () => game.buildings.quarry > 0 },
     { id: 'garden',      label: 'Construire le jardin',          done: () => game.buildings.garden > 0 },
-    { id: 'astronomy',   label: 'Construire la tour d\'astronomie', done: () => game.buildings.astronomy > 0 },
     { id: 'meteorite',   label: 'Récolter une météorite',        done: () => game.meteorite > 0 || game.upgrades.pioche_stellaire >= 1 },
     { id: 'village_4',   label: 'Améliorer le village (niv. 4)', done: () => game.villageLevel >= 4 },
   ],
   4: [
-    { id: 'pioche_stell', label: 'Obtenir la pioche stellaire',  done: () => game.upgrades.pioche_stellaire >= 1 },
-    { id: 'puits',        label: 'Construire le puits',          done: () => game.buildings.puits > 0 },
+    { id: 'pioche_stell',    label: 'Obtenir la pioche stellaire',      done: () => game.upgrades.pioche_stellaire >= 1 },
+    { id: 'astronomy',       label: "Construire la tour d'astronomie",   done: () => game.buildings.astronomy > 0 },
+    { id: 'puits',           label: 'Construire le puits',               done: () => game.buildings.puits > 0 },
+    { id: 'water_noisette',  label: 'Arroser le noisetier',              done: () => game.noisetierWatered },
+    { id: 'pet_squirrel',    label: 'Caresser un écureuil',              done: () => game.squirrelPetted, showWhen: () => game.noisetierStage >= 3 },
   ],
 }
 
 const objectives = computed(() => {
   const all = []
-  // Carry over incomplete objectives from previous levels
   for (let lvl = 1; lvl < game.villageLevel; lvl++) {
     if (OBJECTIVES[lvl]) {
-      all.push(...OBJECTIVES[lvl].filter((o) => !o.done()).map((o) => ({ ...o, carried: true })))
+      all.push(
+        ...OBJECTIVES[lvl]
+          .filter((o) => !o.done() && (!o.showWhen || o.showWhen()))
+          .map((o) => ({ ...o, carried: true }))
+      )
     }
   }
-  // Add all objectives from the current level
   if (OBJECTIVES[game.villageLevel]) {
-    all.push(...OBJECTIVES[game.villageLevel].map((o) => ({ ...o, carried: false })))
+    all.push(
+      ...OBJECTIVES[game.villageLevel]
+        .filter((o) => !o.showWhen || o.showWhen())
+        .map((o) => ({ ...o, carried: false }))
+    )
   }
   return all
 })

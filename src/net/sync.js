@@ -53,6 +53,10 @@ export function serializeWorld(world, { includeSpotsState = false } = {}) {
     _nextId: world._nextId,
     devMode: game.devMode,
     lastProduced: world._lastProduced ? [...world._lastProduced] : [],
+
+    noisetierStage: game.noisetierStage,
+    noisetierWatered: game.noisetierWatered,
+    squirrelPetted: game.squirrelPetted,
   }
 
   if (includeSpotsState) {
@@ -139,6 +143,9 @@ export function applyWorldState(world, snap) {
   if (snap._nextMeteoriteSpawn !== undefined) world._nextMeteoriteSpawn = snap._nextMeteoriteSpawn
 
   if (snap.devMode !== undefined) game.devMode = snap.devMode
+  if (snap.noisetierStage !== undefined) game.noisetierStage = snap.noisetierStage
+  if (snap.noisetierWatered !== undefined) game.noisetierWatered = snap.noisetierWatered
+  if (snap.squirrelPetted !== undefined) game.squirrelPetted = snap.squirrelPetted
 
   // Production icons: use lastProduced events so the icon fires even when the
   // auto-transporter picks up in the same frame (net inventory delta = 0).

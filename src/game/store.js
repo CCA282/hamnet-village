@@ -48,6 +48,10 @@ export const game = reactive({
   telescopeOpen: false,
   devMode: false,
   devCoords: [],
+
+  noisetierStage: 0,
+  noisetierWatered: false,
+  squirrelPetted: false,
 })
 
 // ── Upgrades village ──────────────────────────────────────────────────────────
@@ -223,4 +227,5 @@ export function resetGame() {
   game.buildingMenuOpen = false; game.buildingMenuBuilding = null
   game.buildingMenuIndex = 0; game.buildingMenuOpener = null
   game.timeOfDay = 0.15; game.hint = ''; game.hintOverride = ''; game.telescopeOpen = false; game.devMode = false; game.devCoords = []
+  game.noisetierStage = 0; game.noisetierWatered = false; game.squirrelPetted = false
 }

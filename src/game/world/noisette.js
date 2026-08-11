@@ -13,6 +13,7 @@ export const noisetteMethods = {
     n.growTimer -= dt
     if (n.growTimer <= 0) {
       n.stage = Math.min(n.stage + 1, 3)
+      game.noisetierStage = n.stage
       n.growing = false
       n.growTimer = 0
       this.spawnLeaves(n.x, n.y - 20, 8)
@@ -124,6 +125,7 @@ export const noisetteMethods = {
     sq.state = 'following'
     sq.followTimer = 30
     sq.pausing = false
+    game.squirrelPetted = true
     this.spawnHearts(sq.x, sq.y - 6)
   },
 
@@ -134,6 +136,7 @@ export const noisetteMethods = {
     if (n.stage >= 3) return
     n.growing = true
     n.growTimer = GROW_TIMES[n.stage]
+    game.noisetierWatered = true
     this.spawnPoof(n.x, n.y - 4)
     this.spawnLeaves(n.x, n.y - 10, 5)
   },
