@@ -38,6 +38,20 @@ const OBJECTIVES = {
 function objectivesFor(level) { return OBJECTIVES[level] ?? [] }
 function doneCount(level) { return objectivesFor(level).filter((o) => o.done()).length }
 
+// Mirrors the `objectives` computed from Objectives.vue
+function computeObjectives() {
+  const all = []
+  for (let lvl = 1; lvl < game.villageLevel; lvl++) {
+    if (OBJECTIVES[lvl]) {
+      all.push(...OBJECTIVES[lvl].filter((o) => !o.done()).map((o) => ({ ...o, carried: true })))
+    }
+  }
+  if (OBJECTIVES[game.villageLevel]) {
+    all.push(...OBJECTIVES[game.villageLevel].map((o) => ({ ...o, carried: false })))
+  }
+  return all
+}
+
 beforeEach(() => resetGame())
 
 // ── Level 1 objectives ────────────────────────────────────────────────────────
@@ -151,5 +165,93 @@ describe('objectives — beyond defined levels', () => {
   it('returns empty list for undefined levels', () => {
     expect(objectivesFor(5)).toEqual([])
     expect(objectivesFor(99)).toEqual([])
+  })
+})
+
+// ── Carry-over: incomplete past-level objectives persist ──────────────────────
+
+describe('objectives — carry-over', () => {
+  it('incomplete level-1 objectives appear when advancing to level 2', () => {
+    game.villageLevel = 2
+    // nothing completed at level 1
+    const list = computeObjectives()
+    const carried = list.filter((o) => o.carried)
+    expect(carried.map((o) => o.id)).toContain('hache')
+    expect(carried.map((o) => o.id)).toContain('lumberjack')
+  })
+
+  it('completed level-1 objectives do NOT carry over to level 2', () => {
+    game.villageLevel = 2
+    game.upgrades.hache = 1
+    game.buildings.lumberjack = 1
+    // village_2 is done because villageLevel >= 2
+    const carried = computeObjectives().filter((o) => o.carried)
+    expect(carried.length).toBe(0)
+  })
+
+  it('only incomplete level-2 objectives carry to level 3 (quarry not built)', () => {
+    game.villageLevel = 3
+    // complete everything at level 1
+    game.upgrades.hache = 1; game.buildings.lumberjack = 1
+    // complete most of level 2 but not quarry
+    game.upgrades.fishing_rod = 1; game.buildings.fishinghut = 1
+    game.upgrades.pioche = 1; game.upgrades.charrette = 1
+    const carried = computeObjectives().filter((o) => o.carried)
+    expect(carried.map((o) => o.id)).toContain('quarry')
+    expect(carried.map((o) => o.id)).not.toContain('fishing_rod')
+    expect(carried.map((o) => o.id)).not.toContain('hache')
+  })
+
+  it('carried objective disappears once completed', () => {
+    game.villageLevel = 2
+    // quarry not yet built → carried
+    const before = computeObjectives().filter((o) => o.id === 'quarry' && o.carried)
+    expect(before.length).toBe(0) // quarry is a level-2 obj, not level-1, so not in carry at level 2
+
+    // advance to level 3 with quarry still missing
+    game.villageLevel = 3
+    game.upgrades.hache = 1; game.buildings.lumberjack = 1
+    game.upgrades.fishing_rod = 1; game.buildings.fishinghut = 1
+    game.upgrades.pioche = 1; game.upgrades.charrette = 1
+    const missing = computeObjectives().filter((o) => o.id === 'quarry' && o.carried)
+    expect(missing.length).toBe(1)
+
+    // now build the quarry
+    game.buildings.quarry = 1
+    const done = computeObjectives().filter((o) => o.id === 'quarry' && o.carried)
+    expect(done.length).toBe(0)
+  })
+
+  it('current-level objectives always appear with carried: false', () => {
+    game.villageLevel = 3
+    const list = computeObjectives()
+    const current = list.filter((o) => !o.carried)
+    const ids = current.map((o) => o.id)
+    expect(ids).toContain('faucille')
+    expect(ids).toContain('garden')
+    expect(ids).toContain('village_4')
+  })
+
+  it('accumulated carry-overs from multiple past levels', () => {
+    game.villageLevel = 4
+    // level 1: hache missing, lumberjack built, village_2 done
+    game.buildings.lumberjack = 1
+    // level 2: only pioche bought, rest missing
+    game.upgrades.pioche = 1
+    // level 3: astronomy built, rest missing
+    game.buildings.astronomy = 1
+    const carried = computeObjectives().filter((o) => o.carried)
+    const carriedIds = carried.map((o) => o.id)
+    // from level 1
+    expect(carriedIds).toContain('hache')
+    // from level 2
+    expect(carriedIds).toContain('fishing_rod')
+    expect(carriedIds).toContain('quarry')
+    // from level 3
+    expect(carriedIds).toContain('faucille')
+    // completed ones should NOT appear
+    expect(carriedIds).not.toContain('lumberjack')
+    expect(carriedIds).not.toContain('pioche')
+    expect(carriedIds).not.toContain('astronomy')
   })
 })

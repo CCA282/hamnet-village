@@ -33,7 +33,20 @@ const OBJECTIVES = {
   ],
 }
 
-const objectives = computed(() => OBJECTIVES[game.villageLevel] ?? [])
+const objectives = computed(() => {
+  const all = []
+  // Carry over incomplete objectives from previous levels
+  for (let lvl = 1; lvl < game.villageLevel; lvl++) {
+    if (OBJECTIVES[lvl]) {
+      all.push(...OBJECTIVES[lvl].filter((o) => !o.done()).map((o) => ({ ...o, carried: true })))
+    }
+  }
+  // Add all objectives from the current level
+  if (OBJECTIVES[game.villageLevel]) {
+    all.push(...OBJECTIVES[game.villageLevel].map((o) => ({ ...o, carried: false })))
+  }
+  return all
+})
 const doneCount  = computed(() => objectives.value.filter((o) => o.done()).length)
 const total      = computed(() => objectives.value.length)
 const allDone    = computed(() => total.value > 0 && doneCount.value === total.value)
@@ -72,7 +85,7 @@ onUnmounted(() => { if (rafId) cancelAnimationFrame(rafId) })
           v-for="o in objectives"
           :key="o.id"
           class="obj-item"
-          :class="{ done: o.done() }"
+          :class="{ done: o.done(), carried: o.carried }"
         >
           <span class="obj-check">{{ o.done() ? '✓' : '○' }}</span>
           <span class="obj-label">{{ o.label }}</span>
@@ -169,6 +182,10 @@ onUnmounted(() => { if (rafId) cancelAnimationFrame(rafId) })
 
 .obj-item.done .obj-label { text-decoration: line-through; opacity: 0.45; }
 .obj-item.done .obj-check { color: var(--cozy-green); }
+
+/* Carried-over incomplete objectives from a previous level */
+.obj-item.carried { border-left: 2px solid rgba(255, 160, 30, 0.5); padding-left: 4px; }
+.obj-item.carried .obj-check { color: rgba(255, 160, 30, 0.7); }
 
 .obj-check {
   font-size: 11px;
