@@ -6,6 +6,7 @@ import { netState } from '../net/netState.js'
 import { saveLocal, saveServer } from '../net/sync.js'
 import { engine } from '../game/engine.js'
 import { clipboardCopy } from '../utils/clipboard.js'
+import SettingsButton from './SettingsButton.vue'
 
 const displayHint = computed(() => {
   if (game.hintOverride) return game.hintOverride
@@ -148,6 +149,7 @@ onMounted(() => {
       <span class="time">{{ timeIcon }}</span>
       <span v-if="netState.roomCode" class="roomcode" @pointerdown.stop="copyRoomCode" title="Copier le code">🔑 {{ netState.roomCode }}</span>
       <button v-if="canSave" class="save-btn" @pointerdown.stop="triggerSave" title="Sauvegarder">💾</button>
+      <SettingsButton variant="hud" />
       <button class="quit-btn" @pointerdown.stop="showConfirmQuit = true" title="Retour au menu">⏏</button>
     </div>
     <transition name="fade">

@@ -1,11 +1,17 @@
 <script setup>
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { netState } from '../net/netState.js'
 import { connect, send, onMsg, disconnect, wsUrl } from '../net/socket.js'
 import { serializeWorld, applyWorldState, listLocalSaves, loadLocal, deleteLocal, listServerSaves, loadServer } from '../net/sync.js'
 import { engine } from '../game/engine.js'
 import { game } from '../game/store.js'
 import { clipboardCopy } from '../utils/clipboard.js'
+import { startMusic } from '../game/audio.js'
+import SettingsButton from './SettingsButton.vue'
+
+function startOnce() { startMusic(); window.removeEventListener('pointerdown', startOnce) }
+onMounted(() => window.addEventListener('pointerdown', startOnce))
+onUnmounted(() => window.removeEventListener('pointerdown', startOnce))
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -185,6 +191,7 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
   <!-- Lobby overlay — hidden once game is running -->
   <transition name="lobby-fade">
     <div class="lobby" v-if="!playing">
+      <SettingsButton />
 
       <!-- Home -->
       <div class="card" v-if="step === 'home'">
