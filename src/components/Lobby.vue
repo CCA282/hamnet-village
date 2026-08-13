@@ -108,7 +108,7 @@ async function createRoom(worldData = null, name = null) {
     netState.worldName = name ?? worldData?.name ?? 'Mon monde'
     netState.mode = 'host'
     step.value = 'waiting_players'
-  } catch (e) {
+  } catch {
     error.value = 'Impossible de se connecter au serveur'
     disconnect()
   }
@@ -137,7 +137,7 @@ async function joinRoom() {
     await connect(wsUrl())
     netState.connected = true
 
-    onMsg('room_joined', ({ code: c, guestId }) => {
+    onMsg('room_joined', ({ code: c }) => {
       netState.roomCode = c
       netState.myPlayerId = null
     })
@@ -165,7 +165,7 @@ async function joinRoom() {
 
     send({ type: 'join_room', code, name: netState.playerName.trim() || null })
     netState.mode = 'guest'
-  } catch (e) {
+  } catch {
     error.value = 'Impossible de se connecter au serveur'
     disconnect()
   }

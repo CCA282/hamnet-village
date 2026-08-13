@@ -18,7 +18,7 @@ function makeCtx(overrides = {}) {
     _lastDt: 0,
     _pendingRemoteMenuOpen: null,
     _pendingRemoteMenuClose: null,
-    findPlayer: function (fn) { return this.players.find(fn) },
+    findPlayer (fn) { return this.players.find(fn) },
     ...overrides,
   }
 }

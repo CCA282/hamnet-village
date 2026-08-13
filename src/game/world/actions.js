@@ -1,5 +1,5 @@
 import * as C from '../constants/index.js'
-import { game, build, canBuild, buyBuildingUpgrade, effectiveInventoryMax } from '../store.js'
+import { game, build, canBuild, effectiveInventoryMax } from '../store.js'
 
 const ASTRONOMY_SPOT = () => C.BUILD_SPOTS.find((s) => s.building === 'astronomy')
 

@@ -8,7 +8,7 @@ vi.mock('../net/netState.js', () => ({
 
 const { cartMethods } = await import('../game/world/carts.js')
 const { game, resetGame } = await import('../game/store.js')
-import { VILLAGE, CART_CAPACITY, CART_DEPOSIT_RANGE, INTERACT_RANGE } from '../game/constants/index.js'
+import { VILLAGE, CART_CAPACITY, CART_DEPOSIT_RANGE } from '../game/constants/index.js'
 
 function emptyInv() {
   return { wood: 0, fish: 0, stone: 0, berries: 0, meteorite: 0 }

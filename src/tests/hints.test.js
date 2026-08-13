@@ -6,7 +6,7 @@ vi.mock('../net/netState.js', () => ({ netState: { mode: null, playerName: '' } 
 
 const { hintMethods } = await import('../game/world/hints.js')
 const { game, resetGame } = await import('../game/store.js')
-const { BUILDINGS, UPGRADES } = await import('../game/constants/index.js')
+const { BUILDINGS } = await import('../game/constants/index.js')
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

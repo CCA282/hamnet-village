@@ -8,7 +8,7 @@ vi.mock('../net/netState.js', () => ({
 
 const { resourceMethods } = await import('../game/world/resources.js')
 const { game, resetGame } = await import('../game/store.js')
-import { TREE_HP, STONE_HP, BERRY_HP, TREE_REGROW, STONE_REGROW, BERRY_REGROW } from '../game/constants/index.js'
+import { TREE_HP, STONE_HP, BERRY_HP } from '../game/constants/index.js'
 
 function makePlayer(invOverrides = {}) {
   return {

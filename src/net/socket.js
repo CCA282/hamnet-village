@@ -14,7 +14,7 @@ export function connect(url) {
         const msg = JSON.parse(ev.data)
         _handlers[msg.type]?.(msg)
         _handlers['*']?.(msg)
-      } catch {}
+      } catch { /* ignore malformed message */ }
     }
     _ws.onclose = () => { _handlers['_close']?.() }
   })

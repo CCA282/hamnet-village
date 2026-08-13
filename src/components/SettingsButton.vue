@@ -12,7 +12,7 @@ const open = ref(false)
 <template>
   <button
     class="settings-btn"
-    :class="variant"
+    :class="variant === 'hud' ? 'in-hud' : variant"
     title="Réglages"
     @pointerdown.stop="open = true"
   >⚙️</button>

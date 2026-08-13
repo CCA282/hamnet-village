@@ -3,3 +3,6 @@ dist/
 .DS_Store
 *.local
 .idea/
+server/data/
+test-results/
+playwright-report/

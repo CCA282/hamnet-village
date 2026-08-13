@@ -8,7 +8,7 @@ vi.mock('../net/netState.js', () => ({
 
 const { buildingMethods } = await import('../game/world/buildings.js')
 const { game, resetGame } = await import('../game/store.js')
-import { BUILDINGS, BUILD_SPOTS, VILLAGE, INTERACT_RANGE, AT_DOCK_X_OFFSET, CART_DEPOSIT_RANGE } from '../game/constants/index.js'
+import { BUILDINGS, BUILD_SPOTS, VILLAGE, AT_DOCK_X_OFFSET } from '../game/constants/index.js'
 
 const LUMBERJACK_SPOT = BUILD_SPOTS.find((s) => s.building === 'lumberjack')
 const LUMBERJACK_BASE_INTERVAL = BUILDINGS.lumberjack.interval // 3.0s

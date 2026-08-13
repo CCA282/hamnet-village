@@ -10,7 +10,6 @@ const { game, resetGame } = await import('../game/store.js')
 const C = await import('../game/constants/index.js')
 
 const VILLAGE = C.VILLAGE
-const INTERACT = C.INTERACT_RANGE   // 18
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -45,7 +44,7 @@ function makeCtx(overrides = {}) {
     _lastDt: 0,
     _pendingRemoteMenuOpen: null,
     _pendingRemoteMenuClose: null,
-    findPlayer: function (fn) { return this.players.find(fn) },
+    findPlayer (fn) { return this.players.find(fn) },
     harvestToPlayer: vi.fn().mockImplementation((p, res, n) => {
       p.inventory[res] = (p.inventory[res] || 0) + n
       return true

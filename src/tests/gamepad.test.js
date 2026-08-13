@@ -8,7 +8,7 @@ vi.mock('../net/netState.js', () => ({
 }))
 
 const { playerMethods } = await import('../game/world/players.js')
-const { game, resetGame } = await import('../game/store.js')
+const { resetGame } = await import('../game/store.js')
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -341,7 +341,7 @@ describe('inputFor — pad source', () => {
     const p = w.addPlayer('pad', 0)
     const input = {
       ...makeInputCtx({ 0: makePad([0]) }),
-      padState(idx) { return { mx: 0.5, my: 0, action: true, actionHeld: true, cancel: false } },
+      padState() { return { mx: 0.5, my: 0, action: true, actionHeld: true, cancel: false } },
     }
     const s = w.inputFor(input, p)
     expect(s.action).toBe(true)
