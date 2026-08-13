@@ -122,7 +122,7 @@ export function applyWorldState(world, snap) {
     const ids = new Set(snap.carts.map((c) => c.id))
     world.carts = world.carts.filter((c) => ids.has(c.id))
     for (const sc of snap.carts) {
-      let c = world.carts.find((c) => c.id === sc.id)
+      const c = world.carts.find((c) => c.id === sc.id)
       if (!c) {
         world.carts.push({ ...sc })
       } else {

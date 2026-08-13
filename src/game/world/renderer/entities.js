@@ -102,10 +102,10 @@ export const entityMethods = {
   },
 
   drawHalo(ctx, target, t, color) {
-    let bx, by, rx, ry
+    let bx, by
     const sizes = { chop:[10,5], fish:[13,6], mine:[9,4], pick:[8,4], cart:[10,5], build:[12,6], building:[12,6], menu:[20,10], building_occupied:[12,6], menu_occupied:[20,10], noisette:[10,5], squirrel:[6,3] }
     if (!sizes[target.kind]) return
-    ;[rx, ry] = sizes[target.kind]
+    const [rx, ry] = sizes[target.kind]
     if (target.haloX !== undefined) {
       // Simplified format from network sync
       bx = target.haloX; by = target.haloY

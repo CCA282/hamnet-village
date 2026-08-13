@@ -1,6 +1,6 @@
 export async function clipboardCopy(text) {
   if (navigator.clipboard?.writeText) {
-    try { await navigator.clipboard.writeText(text); return true } catch {}
+    try { await navigator.clipboard.writeText(text); return true } catch { /* fall through to textarea fallback */ }
   }
   try {
     const el = document.createElement('textarea')
@@ -11,6 +11,6 @@ export async function clipboardCopy(text) {
     const ok = document.execCommand('copy')
     document.body.removeChild(el)
     return ok
-  } catch {}
+  } catch { /* clipboard unsupported, report failure below */ }
   return false
 }

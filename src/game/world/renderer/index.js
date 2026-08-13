@@ -1,5 +1,5 @@
 import * as C from '../../constants/index.js'
-import { game, canAfford, upgradeCost, upgradeMaxed } from '../../store.js'
+import { game } from '../../store.js'
 import { sprite } from '../../sprites/index.js'
 
 import { helperMethods }       from './helpers.js'
