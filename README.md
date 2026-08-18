@@ -42,7 +42,7 @@ Approchez le feu de camp pour ouvrir le menu et acheter des améliorations :
 - Vue 3 + Vite
 - Canvas 2D (pixel-art, nearest-neighbor scaling)
 - Aucun framework de jeu — moteur maison (~60 fps, RAF loop)
-- Aucune dépendance backend — 100% frontend
+- Le mode local ne dépend d'aucun backend. Le mode en ligne (`server/`) est un petit serveur Node (WebSocket + HTTP) qui relaie les rooms et stocke les sauvegardes — voir ci-dessous.
 
 ## Build production
 
@@ -50,3 +50,24 @@ Approchez le feu de camp pour ouvrir le menu et acheter des améliorations :
 npm run build    # → dist/
 npm run preview  # prévisualiser le build
 ```
+
+## Sauvegardes serveur
+
+Le mode "Jouer en ligne" s'appuie sur `server/index.js` (Node, `ws` + `http`). Chaque monde est sauvegardé sous forme d'un fichier JSON, un par monde :
+
+```
+<DATA_DIR>/<id>.json
+```
+
+- `DATA_DIR` (variable d'env, défaut `./data/worlds`) définit où ces fichiers sont écrits. Le dossier est créé automatiquement au démarrage s'il n'existe pas.
+- `<id>` est soit l'ID généré à la première sauvegarde, soit celui d'un monde déjà sauvegardé (ré-écrit à chaque save).
+- Une sauvegarde peut être déclenchée par HTTP (`POST /api/worlds`, utilisé par le bouton "Sauvegarder" du HUD) ou par le host via WebSocket (`save_world`). La liste des mondes sauvegardés est exposée par `GET /api/worlds`, un monde précis par `GET /api/worlds/:id`.
+- **`server/data/` n'est pas versionné** (voir `.gitignore`) : ces sauvegardes sont des données d'exécution, pas du code.
+
+### En production
+
+Le `Dockerfile` de `server/` ne déclare pas de volume : sans configuration supplémentaire, `server/data/` vit dans le conteneur et **disparaît au redéploiement**. Pour persister les sauvegardes :
+
+- Monter `DATA_DIR` sur un volume persistant (ex. `docker run -v hamnet-saves:/app/data/worlds -e DATA_DIR=/app/data/worlds ...`, ou l'équivalent chez l'hébergeur utilisé).
+- Sauvegarder ce volume revient à sauvegarder ce dossier — un simple `tar`/`rsync` de `DATA_DIR` suffit (ce sont des fichiers JSON indépendants, pas de base de données à arrêter).
+- **Migrer** un monde vers un autre déploiement : copier le fichier `<id>.json` correspondant dans le `DATA_DIR` de la nouvelle instance ; l'ID redevient utilisable tel quel via `GET /api/worlds/:id`.
