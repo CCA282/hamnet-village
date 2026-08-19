@@ -60,6 +60,8 @@ Chaque merge sur `main` déclenche `.github/workflows/docker-publish.yml`, qui b
 
 Tags poussés : `latest` et `sha-<court>` (le sha du commit sur `main`).
 
+> **`VITE_ACCOUNTS_URL`** — l'image `frontend` est buildée avec cette variable (via la variable de repo GitHub `vars.ACCOUNTS_URL`, passée en `--build-arg` dans `docker-publish.yml`) pour pointer vers l'URL publique d'accounts-service. Tant que `vars.ACCOUNTS_URL` n'est pas configurée sur le repo, l'image publiée retombe sur `http://localhost:4000` et le login/signup ne fonctionnera pas en dehors d'un poste de dev — voir issue de suivi.
+
 ### Déployer sur un NAS / Raspberry Pi
 
 Les packages GHCR sont **privés** par défaut : il faut se connecter une fois sur la machine cible avec un [Personal Access Token](https://github.com/settings/tokens) (scope `read:packages`) :
