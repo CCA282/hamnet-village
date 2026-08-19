@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { game, fmt, effectiveInterval, globalCap } from '../game/store.js'
 import { spriteUrl } from '../game/sprites/index.js'
 import { netState } from '../net/netState.js'
@@ -50,6 +50,15 @@ function flash(msg) {
 }
 
 const canSave = computed(() => netState.mode === 'local' || netState.mode === 'host')
+
+const AUTOSAVE_INTERVAL_MS = 2 * 60 * 1000
+let autosaveTimer = null
+onMounted(() => {
+  autosaveTimer = setInterval(() => {
+    if (canSave.value) triggerSave()
+  }, AUTOSAVE_INTERVAL_MS)
+})
+onUnmounted(() => clearInterval(autosaveTimer))
 
 function confirmQuit() { engine.reset() }
 
