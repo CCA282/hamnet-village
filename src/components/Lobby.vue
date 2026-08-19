@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { netState } from '../net/netState.js'
 import { connect, send, onMsg, disconnect, wsUrl } from '../net/socket.js'
 import { serializeWorld, applyWorldState, listLocalSaves, loadLocal, deleteLocal, listServerSaves, loadServer } from '../net/sync.js'
+import { login, signup, logout } from '../net/accounts.js'
 import { engine } from '../game/engine.js'
 import { game } from '../game/store.js'
 import { clipboardCopy } from '../utils/clipboard.js'
@@ -15,7 +16,7 @@ onUnmounted(() => window.removeEventListener('pointerdown', startOnce))
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-const step = ref('home')        // home | local | online | new_local | new_online | join | saves_local | saves_server
+const step = ref('home')        // home | local | online | new_local | new_online | join | saves_local | saves_server | auth
 const error = ref('')
 const busy = ref(false)
 const roomCodeInput = ref('')
@@ -24,19 +25,50 @@ const localSaves = ref([])
 const serverSaves = ref([])
 const worldNameInput = ref('')
 
+// ── Compte (accounts-service) ────────────────────────────────────────────────
+// Les sauvegardes vont sur le compte si connecté, sinon dans le localStorage de cet appareil.
+
+const authMode = ref('login')   // 'login' | 'signup'
+const authUsername = ref('')
+const authPassword = ref('')
+
+function goAuth(mode) { step.value = 'auth'; authMode.value = mode; authUsername.value = ''; authPassword.value = ''; error.value = '' }
+
+async function submitAuth() {
+  error.value = ''
+  busy.value = true
+  try {
+    const fn = authMode.value === 'signup' ? signup : login
+    netState.user = await fn(authUsername.value.trim(), authPassword.value)
+    goHome()
+  } catch (e) {
+    error.value = e.message || 'Erreur de connexion'
+  }
+  busy.value = false
+}
+
+function doLogout() { logout(); netState.user = null }
+
+// Source unique des sauvegardes : le compte si connecté, sinon cet appareil.
+async function listMySaves() { return netState.user ? await listServerSaves() : listLocalSaves() }
+async function loadMyWorld(id) { return netState.user ? await loadServer(id) : loadLocal(id) }
+
 // ── Navigation ────────────────────────────────────────────────────────────────
 
 function goHome() { step.value = 'home'; error.value = ''; displayCode.value = ''; busy.value = false }
 
 watch(() => netState.mode, (v) => { if (v === null) goHome() })
-function goLocal() { step.value = 'local'; error.value = ''; localSaves.value = listLocalSaves() }
+async function goLocal() {
+  step.value = 'local'; error.value = ''
+  try { localSaves.value = await listMySaves() } catch { localSaves.value = [] }
+}
 function goNewLocal() { step.value = 'new_local'; worldNameInput.value = ''; error.value = '' }
 function goNewOnline() { step.value = 'new_online'; worldNameInput.value = ''; error.value = '' }
 async function goOnline() { step.value = 'online'; error.value = '' }
 async function goServerSaves() {
   step.value = 'saves_server'
   busy.value = true
-  try { serverSaves.value = await listServerSaves() } catch { serverSaves.value = [] }
+  try { serverSaves.value = await listMySaves() } catch { serverSaves.value = [] }
   busy.value = false
 }
 
@@ -56,7 +88,7 @@ function confirmNewLocal() {
 }
 
 async function loadLocalWorld(id) {
-  const data = loadLocal(id)
+  const data = await loadMyWorld(id)
   if (!data) { error.value = 'Sauvegarde introuvable'; return }
   startLocal(data)
 }
@@ -122,7 +154,7 @@ async function confirmNewOnline() {
 }
 
 async function loadServerAndHost(id) {
-  const data = await loadServer(id)
+  const data = await loadMyWorld(id)
   if (!data) { error.value = 'Monde introuvable'; return }
   await createRoom(data)
 }
@@ -207,10 +239,50 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
             spellcheck="false"
           />
         </div>
+        <p class="auth-status" v-if="netState.user">
+          Connecté : <strong>{{ netState.user.username }}</strong>
+          · <a @pointerdown="doLogout">se déconnecter</a>
+        </p>
+        <p class="auth-status" v-else>
+          <a @pointerdown="goAuth('login')">Se connecter</a> ou
+          <a @pointerdown="goAuth('signup')">créer un compte</a>
+          pour sauvegarder tes parties en ligne
+        </p>
         <div class="actions">
           <button class="btn primary" @pointerdown="goLocal">🌿 Jouer en local</button>
           <button class="btn" @pointerdown="goOnline">🌐 Jouer en ligne</button>
         </div>
+      </div>
+
+      <!-- Connexion / inscription -->
+      <div class="card" v-else-if="step === 'auth'">
+        <h2>{{ authMode === 'signup' ? 'Créer un compte' : 'Se connecter' }}</h2>
+        <input
+          class="name-input"
+          v-model="authUsername"
+          placeholder="Pseudo"
+          maxlength="20"
+          spellcheck="false"
+          autofocus
+        />
+        <input
+          class="name-input"
+          v-model="authPassword"
+          type="password"
+          placeholder="Mot de passe"
+          @keydown.enter="submitAuth"
+        />
+        <div class="actions">
+          <button class="btn primary" :disabled="busy || !authUsername.trim() || authPassword.length < 8" @pointerdown="submitAuth">
+            {{ authMode === 'signup' ? "✨ Créer le compte" : "Connexion" }}
+          </button>
+        </div>
+        <p class="sub small">
+          <a v-if="authMode === 'login'" @pointerdown="authMode = 'signup'">Pas encore de compte ? En créer un</a>
+          <a v-else @pointerdown="authMode = 'login'">Déjà un compte ? Se connecter</a>
+        </p>
+        <p class="err" v-if="error">{{ error }}</p>
+        <button class="back" @pointerdown="goHome">← Retour</button>
       </div>
 
       <!-- Local -->
@@ -262,16 +334,17 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
         <button class="back" @pointerdown="step = 'online'">← Retour</button>
       </div>
 
-      <!-- Local saves list -->
+      <!-- Saves list (compte si connecté, sinon cet appareil) -->
       <div class="card" v-else-if="step === 'saves_local'">
         <h2>Charger une partie</h2>
+        <p class="sub small">{{ netState.user ? 'Sauvegardes de ton compte' : 'Sauvegardes sur cet appareil' }}</p>
         <div class="savelist" v-if="localSaves.length">
           <div v-for="s in localSaves" :key="s.id" class="save-row">
             <button class="save-entry" @pointerdown="loadLocalWorld(s.id)">
               <span class="sname">{{ s.name }}</span>
               <span class="sdate">{{ s.savedAt ? new Date(s.savedAt).toLocaleDateString('fr') : '' }}</span>
             </button>
-            <button class="save-delete" @pointerdown.stop="removeLocalSave(s.id)" title="Supprimer">🗑</button>
+            <button v-if="!netState.user" class="save-delete" @pointerdown.stop="removeLocalSave(s.id)" title="Supprimer">🗑</button>
           </div>
         </div>
         <p class="empty" v-else>Aucune sauvegarde</p>
@@ -313,9 +386,10 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
         <button class="back" @pointerdown="step = 'online'">← Retour</button>
       </div>
 
-      <!-- Server saves -->
+      <!-- Saves to host online (compte si connecté, sinon cet appareil) -->
       <div class="card" v-else-if="step === 'saves_server'">
-        <h2>Charger un monde (serveur)</h2>
+        <h2>Charger un monde</h2>
+        <p class="sub small">{{ netState.user ? 'Sauvegardes de ton compte' : 'Sauvegardes sur cet appareil' }}</p>
         <p v-if="busy" class="loading">Chargement…</p>
         <div class="savelist" v-else-if="serverSaves.length">
           <button
@@ -327,7 +401,7 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
             <span class="sdate">{{ s.savedAt ? new Date(s.savedAt).toLocaleDateString('fr') : '' }}</span>
           </button>
         </div>
-        <p class="empty" v-else>Aucun monde sauvegardé sur le serveur</p>
+        <p class="empty" v-else>Aucune sauvegarde</p>
         <p class="err" v-if="error">{{ error }}</p>
         <button class="back" @pointerdown="step = 'online'">← Retour</button>
       </div>
@@ -380,6 +454,9 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
 h2 { margin: 0; font-size: 20px; }
 .sub { margin: 0; font-size: 14px; color: var(--cozy-ink-soft); }
 .sub.small { font-size: 12px; }
+
+.auth-status { margin: 0; font-size: 12px; color: var(--cozy-ink-soft); }
+.card a { color: var(--cozy-gold); cursor: pointer; text-decoration: underline; }
 
 .actions {
   display: flex;

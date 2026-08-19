@@ -1,5 +1,6 @@
 import { game } from '../game/store.js'
 import { BUILDINGS, BUILD_SPOTS, VILLAGE } from '../game/constants/index.js'
+import { authHeaders } from './accounts.js'
 
 const RESOURCES = ['wood', 'fish', 'stone', 'berries', 'meteorite']
 
@@ -251,7 +252,7 @@ export function deleteLocal(id) {
 // ── Server save (HTTP) ────────────────────────────────────────────────────────
 
 export async function listServerSaves() {
-  const r = await fetch('/api/worlds')
+  const r = await fetch('/api/worlds', { headers: authHeaders() })
   return r.ok ? r.json() : []
 }
 
@@ -261,7 +262,7 @@ export async function saveServer(world, id, name) {
   data.id = id || undefined
   const r = await fetch('/api/worlds', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(data),
   })
   if (r.ok) { const { id: newId } = await r.json(); return newId }
@@ -269,6 +270,6 @@ export async function saveServer(world, id, name) {
 }
 
 export async function loadServer(id) {
-  const r = await fetch(`/api/worlds/${id}`)
+  const r = await fetch(`/api/worlds/${id}`, { headers: authHeaders() })
   return r.ok ? r.json() : null
 }

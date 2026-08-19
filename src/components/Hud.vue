@@ -22,20 +22,20 @@ const showConfirmQuit = ref(false)
 let saveMsgTimer = null
 
 async function triggerSave() {
-  if (netState.mode === 'local') {
-    const id = netState.worldId || (crypto.randomUUID?.() ?? (Date.now().toString(36) + Math.random().toString(36).slice(2)))
-    netState.worldId = id
+  const id = netState.worldId || (crypto.randomUUID?.() ?? (Date.now().toString(36) + Math.random().toString(36).slice(2)))
+  netState.worldId = id
+  if (netState.user) {
     try {
-      saveLocal(engine.world, id, netState.worldName)
-      flash('Sauvegardé !')
+      const savedId = await saveServer(engine.world, id, netState.worldName)
+      if (savedId) { netState.worldId = savedId; flash('Sauvegardé sur ton compte !') }
+      else flash('Erreur de sauvegarde')
     } catch {
       flash('Erreur de sauvegarde')
     }
-  } else if (netState.mode === 'host') {
+  } else {
     try {
-      const id = await saveServer(engine.world, netState.worldId, netState.worldName)
-      if (id) { netState.worldId = id; flash('Sauvegardé sur le serveur !') }
-      else flash('Erreur de sauvegarde')
+      saveLocal(engine.world, id, netState.worldName)
+      flash('Sauvegardé sur cet appareil !')
     } catch {
       flash('Erreur de sauvegarde')
     }
