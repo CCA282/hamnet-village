@@ -51,6 +51,32 @@ npm run build    # → dist/
 npm run preview  # prévisualiser le build
 ```
 
+## Images Docker
+
+Chaque merge sur `main` déclenche `.github/workflows/docker-publish.yml`, qui build et publie deux images sur le GitHub Container Registry (ghcr.io) :
+
+- `ghcr.io/cca282/hamnet-village-frontend`
+- `ghcr.io/cca282/hamnet-village-server`
+
+Tags poussés : `latest` et `sha-<court>` (le sha du commit sur `main`).
+
+### Déployer sur un NAS / Raspberry Pi
+
+Les packages GHCR sont **privés** par défaut : il faut se connecter une fois sur la machine cible avec un [Personal Access Token](https://github.com/settings/tokens) (scope `read:packages`) :
+
+```bash
+echo <TOKEN> | docker login ghcr.io -u <ton-user-github> --password-stdin
+```
+
+Puis, avec `docker-compose.prod.yml` (référence les images publiées au lieu de les rebuild) copié sur la machine :
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+> Les images sont buildées en `amd64` uniquement pour l'instant — à adapter (build multi-arch) si le déploiement cible est un Raspberry Pi en ARM64.
+
 ## Sauvegardes serveur
 
 Le mode "Jouer en ligne" s'appuie sur `server/index.js` (Node, `ws` + `http`). Chaque monde est sauvegardé sous forme d'un fichier JSON, un par monde :
