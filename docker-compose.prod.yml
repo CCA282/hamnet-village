@@ -1,0 +1,20 @@
+services:
+  frontend:
+    image: ghcr.io/cca282/hamnet-village-frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/cca282/hamnet-village-server:latest
+    environment:
+      PORT: "3001"
+      DATA_DIR: "/data/worlds"
+    volumes:
+      - worlds_data:/data/worlds
+    restart: unless-stopped
+
+volumes:
+  worlds_data:
