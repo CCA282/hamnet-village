@@ -77,6 +77,16 @@ docker compose -f docker-compose.prod.yml up -d
 
 > Les images sont buildées en `amd64` uniquement pour l'instant — à adapter (build multi-arch) si le déploiement cible est un Raspberry Pi en ARM64.
 
+### Mise à jour automatique (Watchtower)
+
+`docker-compose.prod.yml` inclut un service `watchtower` : il vérifie ghcr.io toutes les 5 min (`WATCHTOWER_POLL_INTERVAL`) et, si une nouvelle image `latest` a été publiée, la pull et redémarre le conteneur concerné automatiquement.
+
+- **Aucun port entrant** n'est ouvert sur le NAS/RPi : Watchtower ne fait que du sortant vers ghcr.io.
+- **Périmètre limité** aux services `frontend`/`backend` de ce projet via le label `com.centurylinklabs.watchtower.enable=true` — les autres conteneurs éventuellement présents sur la machine ne sont pas touchés (`WATCHTOWER_LABEL_ENABLE=true`).
+- Watchtower réutilise les identifiants du `docker login ghcr.io` déjà fait sur la machine (monte `~/.docker/config.json` en lecture seule) — pas de token dupliqué dans le compose file.
+- `WATCHTOWER_CLEANUP=true` supprime les anciennes images après update, pour éviter d'accumuler des couches inutiles.
+- Le `docker compose -f docker-compose.prod.yml up -d` de la section précédente suffit à le démarrer — rien à installer en plus.
+
 ## Sauvegardes serveur
 
 Le mode "Jouer en ligne" s'appuie sur `server/index.js` (Node, `ws` + `http`). Chaque monde est sauvegardé sous forme d'un fichier JSON, un par monde :
