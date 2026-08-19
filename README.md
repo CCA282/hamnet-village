@@ -87,18 +87,31 @@ docker compose -f docker-compose.prod.yml up -d
 - `WATCHTOWER_CLEANUP=true` supprime les anciennes images après update, pour éviter d'accumuler des couches inutiles.
 - Le `docker compose -f docker-compose.prod.yml up -d` de la section précédente suffit à le démarrer — rien à installer en plus.
 
-## Sauvegardes serveur
+## Comptes et sauvegardes
 
-Le mode "Jouer en ligne" s'appuie sur `server/index.js` (Node, `ws` + `http`). Chaque monde est sauvegardé sous forme d'un fichier JSON, un par monde :
+L'authentification est déléguée à [accounts-service](https://github.com/CCA282/accounts-service), un service partagé (comptes + JWT) réutilisé par les autres jeux de `dev/games/`. Hamnet ne gère ni mot de passe ni compte lui-même — il vérifie juste les tokens émis par ce service.
 
-```
-<DATA_DIR>/<id>.json
-```
+**Où est stockée une sauvegarde ?** Ça dépend uniquement de l'état de connexion, pas du mode de jeu (solo/multi) :
 
-- `DATA_DIR` (variable d'env, défaut `./data/worlds`) définit où ces fichiers sont écrits. Le dossier est créé automatiquement au démarrage s'il n'existe pas.
-- `<id>` est soit l'ID généré à la première sauvegarde, soit celui d'un monde déjà sauvegardé (ré-écrit à chaque save).
-- Une sauvegarde peut être déclenchée par HTTP (`POST /api/worlds`, utilisé par le bouton "Sauvegarder" du HUD) ou par le host via WebSocket (`save_world`). La liste des mondes sauvegardés est exposée par `GET /api/worlds`, un monde précis par `GET /api/worlds/:id`.
-- **`server/data/` n'est pas versionné** (voir `.gitignore`) : ces sauvegardes sont des données d'exécution, pas du code.
+| | Non connecté | Connecté (compte) |
+|---|---|---|
+| Stockage | `localStorage` du navigateur | Backend Hamnet (`server/`) |
+| Visible sur un autre appareil | Non | Oui (même compte) |
+| Visible par d'autres joueurs | Non | Non — filtré par compte |
+
+Se connecter est **optionnel** : le solo/multi sans compte reste jouable normalement, juste sans persistance au-delà de cet appareil/navigateur.
+
+### Backend (`server/`)
+
+- `POST /api/worlds`, `GET /api/worlds` (liste) et `GET /api/worlds/:id` (chargement) nécessitent désormais un header `Authorization: Bearer <token>` valide — sans compte, ces routes renvoient `401`.
+- Chaque sauvegarde est taguée `ownerId` (l'id du compte) ; la liste et le chargement sont filtrés pour qu'un compte ne voie jamais les mondes d'un autre.
+- `JWT_SECRET` (variable d'env) doit être **identique** à celui configuré sur accounts-service — c'est ce secret partagé qui permet à Hamnet de vérifier les tokens sans appeler accounts-service à chaque requête. Sans `JWT_SECRET`, le serveur démarre quand même (le multijoueur en direct sans sauvegarde fonctionne) mais toutes les routes `/api/worlds` renvoient `401`.
+- Les sauvegardes sont des fichiers JSON, un par monde, dans `DATA_DIR` (défaut `./data/worlds`, créé automatiquement). **`server/data/` n'est pas versionné** (voir `.gitignore`).
+
+### Frontend
+
+- `VITE_ACCOUNTS_URL` (variable d'env au build) pointe vers l'URL publique d'accounts-service. Défaut en dev : `http://localhost:4000`.
+- Le token est stocké en `localStorage` (`hamnet_auth_token`) et vérifié (`GET /me`) au chargement de l'app.
 
 ### En production
 
