@@ -1,5 +1,5 @@
 import { reactive, watch } from 'vue'
-import { fetchMe } from './accounts.js'
+import { supabase } from './supabase.js'
 
 export const netState = reactive({
   mode: null,         // null | 'local' | 'host' | 'guest'
@@ -9,9 +9,14 @@ export const netState = reactive({
   worldId: null,      // current world save ID (local or server)
   worldName: 'Mon monde',
   playerName: localStorage.getItem('hamnet_player_name') || '',
-  user: null,          // { id, username } si connecté via accounts-service, sinon null
+  user: null,          // { id, email } si connecté via Supabase, sinon null
 })
 
 watch(() => netState.playerName, (v) => localStorage.setItem('hamnet_player_name', v))
 
-fetchMe().then((user) => { netState.user = user })
+function toUser(user) {
+  return user ? { id: user.id, email: user.email } : null
+}
+
+supabase.auth.getSession().then(({ data }) => { netState.user = toUser(data.session?.user) })
+supabase.auth.onAuthStateChange((_event, session) => { netState.user = toUser(session?.user) })
