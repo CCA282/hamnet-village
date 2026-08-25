@@ -60,7 +60,7 @@ Chaque merge sur `main` déclenche `.github/workflows/docker-publish.yml`, qui b
 
 Tags poussés : `latest` et `sha-<court>` (le sha du commit sur `main`).
 
-> **`VITE_ACCOUNTS_URL`** — l'image `frontend` est buildée avec cette variable (via la variable de repo GitHub `vars.ACCOUNTS_URL`, passée en `--build-arg` dans `docker-publish.yml`) pour pointer vers l'URL publique d'accounts-service. Tant que `vars.ACCOUNTS_URL` n'est pas configurée sur le repo, l'image publiée retombe sur `http://localhost:4000` et le login/signup ne fonctionnera pas en dehors d'un poste de dev — voir issue de suivi.
+> **`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`** — l'image `frontend` est buildée avec ces variables (via les variables de repo GitHub `vars.SUPABASE_URL`/`vars.SUPABASE_ANON_KEY`, passées en `--build-arg` dans `docker-publish.yml`) pour pointer vers le projet Supabase. Tant qu'elles ne sont pas configurées sur le repo, l'image publiée reste jouable mais sans compte ni sauvegarde en ligne (mode local uniquement).
 
 ### Déployer sur un NAS / Raspberry Pi
 
@@ -91,7 +91,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 ## Comptes et sauvegardes
 
-L'authentification est déléguée à [accounts-service](https://github.com/CCA282/accounts-service), un service partagé (comptes + JWT) réutilisé par les autres jeux de `dev/games/`. Hamnet ne gère ni mot de passe ni compte lui-même — il vérifie juste les tokens émis par ce service.
+L'authentification passe par [Supabase Auth](https://supabase.com) (email + mot de passe) — même projet Supabase que cine-planner. Hamnet ne stocke ni mot de passe ni compte lui-même : `server/` vérifie juste les tokens émis par Supabase.
 
 **Où est stockée une sauvegarde ?** Ça dépend uniquement de l'état de connexion, pas du mode de jeu (solo/multi) :
 
@@ -106,14 +106,14 @@ Se connecter est **optionnel** : le solo/multi sans compte reste jouable normale
 ### Backend (`server/`)
 
 - `POST /api/worlds`, `GET /api/worlds` (liste) et `GET /api/worlds/:id` (chargement) nécessitent désormais un header `Authorization: Bearer <token>` valide — sans compte, ces routes renvoient `401`.
-- Chaque sauvegarde est taguée `ownerId` (l'id du compte) ; la liste et le chargement sont filtrés pour qu'un compte ne voie jamais les mondes d'un autre.
-- `JWT_SECRET` (variable d'env) doit être **identique** à celui configuré sur accounts-service — c'est ce secret partagé qui permet à Hamnet de vérifier les tokens sans appeler accounts-service à chaque requête. Sans `JWT_SECRET`, le serveur démarre quand même (le multijoueur en direct sans sauvegarde fonctionne) mais toutes les routes `/api/worlds` renvoient `401`.
+- Chaque sauvegarde est taguée `ownerId` (l'id du compte Supabase, un uuid) ; la liste et le chargement sont filtrés pour qu'un compte ne voie jamais les mondes d'un autre.
+- `SUPABASE_URL` / `SUPABASE_ANON_KEY` (variables d'env) pointent vers le même projet Supabase que le frontend — `server/` appelle `supabase.auth.getUser(token)` pour vérifier chaque requête (l'anon key suffit, aucune clé privilégiée n'est nécessaire côté serveur). Sans elles, le serveur démarre quand même (le multijoueur en direct sans sauvegarde fonctionne) mais toutes les routes `/api/worlds` renvoient `401`.
 - Les sauvegardes sont des fichiers JSON, un par monde, dans `DATA_DIR` (défaut `./data/worlds`, créé automatiquement). **`server/data/` n'est pas versionné** (voir `.gitignore`).
 
 ### Frontend
 
-- `VITE_ACCOUNTS_URL` (variable d'env au build) pointe vers l'URL publique d'accounts-service. Défaut en dev : `http://localhost:4000`.
-- Le token est stocké en `localStorage` (`hamnet_auth_token`) et vérifié (`GET /me`) au chargement de l'app.
+- `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (variables d'env au build) pointent vers le projet Supabase. Sans elles, l'app reste jouable mais sans compte (mode local uniquement) — voir `src/net/supabase.js`.
+- La session est gérée par `@supabase/supabase-js` (persistée en `localStorage` par le SDK) ; `netState.user` suit `supabase.auth.onAuthStateChange`.
 
 ### En production
 

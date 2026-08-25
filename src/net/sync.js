@@ -252,7 +252,7 @@ export function deleteLocal(id) {
 // ── Server save (HTTP) ────────────────────────────────────────────────────────
 
 export async function listServerSaves() {
-  const r = await fetch('/api/worlds', { headers: authHeaders() })
+  const r = await fetch('/api/worlds', { headers: await authHeaders() })
   return r.ok ? r.json() : []
 }
 
@@ -262,7 +262,7 @@ export async function saveServer(world, id, name) {
   data.id = id || undefined
   const r = await fetch('/api/worlds', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(data),
   })
   if (r.ok) { const { id: newId } = await r.json(); return newId }
@@ -270,6 +270,6 @@ export async function saveServer(world, id, name) {
 }
 
 export async function loadServer(id) {
-  const r = await fetch(`/api/worlds/${id}`, { headers: authHeaders() })
+  const r = await fetch(`/api/worlds/${id}`, { headers: await authHeaders() })
   return r.ok ? r.json() : null
 }

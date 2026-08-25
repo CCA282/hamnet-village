@@ -25,21 +25,21 @@ const localSaves = ref([])
 const serverSaves = ref([])
 const worldNameInput = ref('')
 
-// ── Compte (accounts-service) ────────────────────────────────────────────────
+// ── Compte (Supabase Auth) ──────────────────────────────────────────────────
 // Les sauvegardes vont sur le compte si connecté, sinon dans le localStorage de cet appareil.
 
 const authMode = ref('login')   // 'login' | 'signup'
-const authUsername = ref('')
+const authEmail = ref('')
 const authPassword = ref('')
 
-function goAuth(mode) { step.value = 'auth'; authMode.value = mode; authUsername.value = ''; authPassword.value = ''; error.value = '' }
+function goAuth(mode) { step.value = 'auth'; authMode.value = mode; authEmail.value = ''; authPassword.value = ''; error.value = '' }
 
 async function submitAuth() {
   error.value = ''
   busy.value = true
   try {
     const fn = authMode.value === 'signup' ? signup : login
-    netState.user = await fn(authUsername.value.trim(), authPassword.value)
+    netState.user = await fn(authEmail.value.trim(), authPassword.value)
     goHome()
   } catch (e) {
     error.value = e.message || 'Erreur de connexion'
@@ -47,7 +47,7 @@ async function submitAuth() {
   busy.value = false
 }
 
-function doLogout() { logout(); netState.user = null }
+async function doLogout() { await logout(); netState.user = null }
 
 // Source unique des sauvegardes : le compte si connecté, sinon cet appareil.
 async function listMySaves() { return netState.user ? await listServerSaves() : listLocalSaves() }
@@ -240,7 +240,7 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
           />
         </div>
         <p class="auth-status" v-if="netState.user">
-          Connecté : <strong>{{ netState.user.username }}</strong>
+          Connecté : <strong>{{ netState.user.email }}</strong>
           · <a @pointerdown="doLogout">se déconnecter</a>
         </p>
         <p class="auth-status" v-else>
@@ -259,9 +259,9 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
         <h2>{{ authMode === 'signup' ? 'Créer un compte' : 'Se connecter' }}</h2>
         <input
           class="name-input"
-          v-model="authUsername"
-          placeholder="Pseudo"
-          maxlength="20"
+          v-model="authEmail"
+          type="email"
+          placeholder="Email"
           spellcheck="false"
           autofocus
         />
@@ -273,7 +273,7 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
           @keydown.enter="submitAuth"
         />
         <div class="actions">
-          <button class="btn primary" :disabled="busy || !authUsername.trim() || authPassword.length < 8" @pointerdown="submitAuth">
+          <button class="btn primary" :disabled="busy || !authEmail.trim() || authPassword.length < 6" @pointerdown="submitAuth">
             {{ authMode === 'signup' ? "✨ Créer le compte" : "Connexion" }}
           </button>
         </div>

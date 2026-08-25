@@ -11,8 +11,15 @@ function makeLocalStorage() {
 }
 vi.stubGlobal('localStorage', makeLocalStorage())
 
+let currentSession = null
+vi.mock('../net/supabase.js', () => ({
+  supabase: { auth: { getSession: () => Promise.resolve({ data: { session: currentSession } }) } },
+}))
+
 const { saveLocal, loadLocal, listLocalSaves, deleteLocal, saveServer, listServerSaves, loadServer } = await import('../net/sync.js')
 const { resetGame } = await import('../game/store.js')
+
+function signIn(token) { currentSession = { access_token: token } }
 
 function makeWorld() {
   return {
@@ -32,6 +39,7 @@ function mockFetchOnce(status, body) {
 
 beforeEach(() => {
   localStorage.clear()
+  currentSession = null
   resetGame()
   vi.restoreAllMocks()
 })
@@ -77,7 +85,7 @@ describe('saveLocal / loadLocal / listLocalSaves / deleteLocal', () => {
 
 describe('saveServer / listServerSaves / loadServer', () => {
   it('saveServer attaches the Authorization header when signed in', async () => {
-    localStorage.setItem('hamnet_auth_token', 'tok123')
+    signIn('tok123')
     mockFetchOnce(200, { id: 'w1' })
     const id = await saveServer(makeWorld(), 'w1', 'Mon monde')
     expect(id).toBe('w1')
@@ -98,7 +106,7 @@ describe('saveServer / listServerSaves / loadServer', () => {
   })
 
   it('listServerSaves sends the Authorization header and returns the list', async () => {
-    localStorage.setItem('hamnet_auth_token', 'tok123')
+    signIn('tok123')
     mockFetchOnce(200, [{ id: 'w1', name: 'Mon monde' }])
     const list = await listServerSaves()
     expect(list).toEqual([{ id: 'w1', name: 'Mon monde' }])

@@ -1,45 +1,34 @@
-const TOKEN_KEY = 'hamnet_auth_token'
+import { supabase } from './supabase.js'
 
-export function accountsUrl() {
-  if (import.meta.env.VITE_ACCOUNTS_URL) return import.meta.env.VITE_ACCOUNTS_URL
-  return 'http://localhost:4000'
+function toUser(user) {
+  return user ? { id: user.id, email: user.email } : null
 }
 
-export function getToken() { return localStorage.getItem(TOKEN_KEY) }
-function setToken(token) {
-  if (token) localStorage.setItem(TOKEN_KEY, token)
-  else localStorage.removeItem(TOKEN_KEY)
+export async function signup(email, password) {
+  const { data, error } = await supabase.auth.signUp({ email, password })
+  if (error) throw error
+  return toUser(data.user)
 }
 
-export function authHeaders() {
-  const token = getToken()
-  return token ? { Authorization: `Bearer ${token}` } : {}
+export async function login(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) throw error
+  return toUser(data.user)
 }
 
-async function authRequest(path, username, password) {
-  const r = await fetch(`${accountsUrl()}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  })
-  if (!r.ok) throw new Error(await r.text())
-  const { token, user } = await r.json()
-  setToken(token)
-  return user
+export async function logout() {
+  await supabase.auth.signOut()
 }
 
-export function signup(username, password) { return authRequest('/signup', username, password) }
-export function login(username, password) { return authRequest('/login', username, password) }
-
-export function logout() { setToken(null) }
-
+// Session courante, ou null si signé out / Supabase pas configuré.
 export async function fetchMe() {
-  if (!getToken()) return null
-  try {
-    const r = await fetch(`${accountsUrl()}/me`, { headers: authHeaders() })
-    if (!r.ok) { setToken(null); return null }
-    return await r.json()
-  } catch {
-    return null
-  }
+  const { data } = await supabase.auth.getSession()
+  return toUser(data.session?.user)
+}
+
+// Header à joindre aux requêtes vers server/index.js (vérifie ce JWT auprès de Supabase).
+export async function authHeaders() {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
