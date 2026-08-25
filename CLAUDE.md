@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-This repo lives under `dev/games/` alongside sibling projects: [`accounts-service`](https://github.com/CCA282/accounts-service) (shared auth, its own repo, its own CLAUDE.md) and, eventually, a shared game template. Don't assume this repo is self-contained for identity/accounts — see "Comptes" below.
+This repo lives under `dev/games/`. Auth is delegated to Supabase Auth (see "Comptes" below), same Supabase project as the sibling `cine-planner` repo — not to `accounts-service` (also under `dev/games/`), which this repo no longer depends on.
 
 ## Commands
 
@@ -55,7 +55,8 @@ Input (keyboard/pad/touch/mouse)
 | `src/net/socket.js` | Thin WebSocket wrapper (connect/send/onMsg) used by online mode |
 | `src/net/sync.js` | `serializeWorld`/`applyWorldState` (world ↔ plain JSON), plus save/load — routes to `localStorage` or the backend depending on `netState.user` (see "Comptes" below) |
 | `src/net/netState.js` | Non-canvas reactive state: `mode` (`local`/`host`/`guest`), room code, `user` (signed-in account or `null`) |
-| `src/net/accounts.js` | Calls to accounts-service (`/signup`, `/login`, `/me`) — the only file that talks to that service |
+| `src/net/supabase.js` | Supabase client (`createClient`), reads `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` |
+| `src/net/accounts.js` | `signup`/`login`/`logout`/`fetchMe`/`authHeaders` — thin wrapper around `supabase.auth.*` |
 | `server/index.js` | Node (`http` + `ws`) — relays room state between host/guests, persists worlds for signed-in users |
 
 ### World module pattern
@@ -103,18 +104,20 @@ Or use `/add-upgrade` slash command.
 
 Toggle `game.devMode = true` in console → `canAfford` always returns true, `pay` is a no-op. Useful for testing late-game content without grinding.
 
-### Comptes (accounts-service)
+### Comptes (Supabase Auth)
 
-Auth is delegated entirely to [accounts-service](https://github.com/CCA282/accounts-service) — this repo never stores a password. Where a save lives depends **only** on `netState.user` (signed in or not), not on local/host mode:
+Auth is delegated to Supabase Auth (email + password) — same Supabase project as `cine-planner`, but a separate concern from it (no shared table; hamnet only uses Supabase for identity, not storage). This repo never stores a password. Where a save lives depends **only** on `netState.user` (signed in or not), not on local/host mode:
 
-- Signed in → `server/index.js` (`POST/GET /api/worlds`), tagged and filtered by `ownerId`.
+- Signed in → `server/index.js` (`POST/GET /api/worlds`), tagged and filtered by `ownerId` (the Supabase user's uuid).
 - Signed out → `localStorage` only, nothing sent to the backend.
 
-`server/index.js` verifies the JWT itself (`JWT_SECRET`, shared with accounts-service) — it never calls accounts-service over the network. If you add a new save-related endpoint, gate it the same way (`getUser(req)` in `server/index.js`) rather than trusting an unauthenticated `ownerId` from the client.
+`server/index.js` verifies the JWT by calling `supabase.auth.getUser(token)` (`SUPABASE_URL`/`SUPABASE_ANON_KEY`) — unlike the old accounts-service setup, this is a network round-trip to Supabase's Auth API per request rather than local-only verification (Supabase's signing scheme isn't assumed to be a static shared secret). If you add a new save-related endpoint, gate it the same way (`getUser(req)` in `server/index.js`) rather than trusting an unauthenticated `ownerId` from the client.
 
-`VITE_ACCOUNTS_URL` (Vite env var, **build-time only**) points the frontend at accounts-service. In prod it's baked in via `docker-publish.yml`'s `--build-arg` from the `ACCOUNTS_URL` repo variable — changing it requires rebuilding the image, not just redeploying.
+`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` (Vite env vars, **build-time only**) point the frontend at the Supabase project. In prod they're baked in via `docker-publish.yml`'s `--build-arg` from the `SUPABASE_URL`/`SUPABASE_ANON_KEY` repo variables — changing them requires rebuilding the image, not just redeploying. The anon key is meant to be public (same key `supabase-js` ships to every browser).
+
+Note: this is a full re-architecture from the previous accounts-service-based setup (see git history) — old accounts-service user ids don't match Supabase uuids, so worlds saved under an old account are orphaned (still on disk under their old `ownerId`, just no longer reachable through the account view).
 
 ### Tests
 
-- **Unit** (`npm run test`, vitest, `src/tests/`): pure game-logic and `src/net/` modules. `localStorage`/`fetch` aren't available in the `node` test environment — stub them with `vi.stubGlobal(...)` at the top of the file before importing the module under test (see `src/tests/accounts.test.js`, `sync-storage.test.js`).
-- **E2E** (`npm run test:e2e`, Playwright, `e2e/`): drives a real browser against `npm run dev`. **Nothing in `server/` or accounts-service actually runs in CI** — WebSocket is replaced with a `MockWebSocket` (`page.addInitScript`, see `online-coop.spec.js`), and HTTP calls (`/api/worlds`, accounts-service) are intercepted with `page.route()` (see `accounts.spec.js`). Keep it that way — e2e tests must never assume a real backend or accounts-service instance is listening.
+- **Unit** (`npm run test`, vitest, `src/tests/`): pure game-logic and `src/net/` modules. `localStorage`/`fetch` aren't available in the `node` test environment — stub them with `vi.stubGlobal(...)` at the top of the file before importing the module under test. `src/net/supabase.js` is mocked with `vi.mock('../net/supabase.js', ...)` rather than stubbing `fetch`, since `@supabase/supabase-js` isn't a thin fetch wrapper (see `src/tests/accounts.test.js`, `sync-storage.test.js`).
+- **E2E** (`npm run test:e2e`, Playwright, `e2e/`): drives a real browser against `npm run dev`. **Nothing in `server/` or Supabase actually runs in CI** — WebSocket is replaced with a `MockWebSocket` (`page.addInitScript`, see `online-coop.spec.js`), and HTTP calls (`/api/worlds`, Supabase's `/auth/v1/*` REST endpoints) are intercepted with `page.route()` (see `accounts.spec.js`). `VITE_SUPABASE_URL` is unset in this suite, so the client falls back to the fixed placeholder `https://not-configured.supabase.co` (see `src/net/supabase.js`) — that's the exact host `accounts.spec.js` routes. Keep it that way — e2e tests must never assume a real backend or Supabase project is reachable.

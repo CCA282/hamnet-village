@@ -14,7 +14,8 @@ services:
     environment:
       PORT: "3001"
       DATA_DIR: "/data/worlds"
-      JWT_SECRET: "${JWT_SECRET}"  # doit être identique à celui d'accounts-service
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_ANON_KEY: "${SUPABASE_ANON_KEY}"  # même projet Supabase que le frontend
     volumes:
       - worlds_data:/data/worlds
     restart: unless-stopped

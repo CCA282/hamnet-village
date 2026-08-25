@@ -2,27 +2,27 @@ import { createServer } from 'http'
 import { WebSocketServer } from 'ws'
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'fs'
 import { randomBytes } from 'crypto'
-import jwt from 'jsonwebtoken'
+import { createClient } from '@supabase/supabase-js'
 
 const PORT = parseInt(process.env.PORT || '3001')
 const DATA_DIR = process.env.DATA_DIR || './data/worlds'
 if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true })
 
-const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET) console.warn('JWT_SECRET non défini : les sauvegardes serveur (comptes) sont désactivées')
+const SUPABASE_URL = process.env.SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) console.warn('SUPABASE_URL / SUPABASE_ANON_KEY non défini : les sauvegardes serveur (comptes) sont désactivées')
 
-// Vérifie le token émis par accounts-service (secret partagé) — retourne { id, username } ou null.
-function getUser(req) {
-  if (!JWT_SECRET) return null
+const supabase = SUPABASE_URL && SUPABASE_ANON_KEY ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
+
+// Vérifie le token émis par Supabase Auth (même projet que le frontend) — retourne { id, email } ou null.
+async function getUser(req) {
+  if (!supabase) return null
   const auth = req.headers['authorization'] || ''
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
   if (!token) return null
-  try {
-    const payload = jwt.verify(token, JWT_SECRET)
-    return { id: payload.sub, username: payload.username }
-  } catch {
-    return null
-  }
+  const { data, error } = await supabase.auth.getUser(token)
+  if (error || !data.user) return null
+  return { id: data.user.id, email: data.user.email }
 }
 
 // ── Utilitaires ───────────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ function loadWorld(id) {
 
 // ── HTTP ──────────────────────────────────────────────────────────────────────
 
-const httpServer = createServer((req, res) => {
+const httpServer = createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -135,7 +135,7 @@ const httpServer = createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`)
 
   if (req.method === 'GET' && url.pathname === '/api/worlds') {
-    const user = getUser(req)
+    const user = await getUser(req)
     if (!user) { res.writeHead(401); res.end('Connecte-toi pour voir tes parties sauvegardées'); return }
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify(listWorlds(user.id)))
@@ -143,7 +143,7 @@ const httpServer = createServer((req, res) => {
   }
 
   if (req.method === 'GET' && url.pathname.startsWith('/api/worlds/')) {
-    const user = getUser(req)
+    const user = await getUser(req)
     if (!user) { res.writeHead(401); res.end('Connecte-toi pour charger cette partie'); return }
     const id = url.pathname.split('/').pop()
     const data = loadWorld(id)
@@ -154,7 +154,7 @@ const httpServer = createServer((req, res) => {
   }
 
   if (req.method === 'POST' && url.pathname === '/api/worlds') {
-    const user = getUser(req)
+    const user = await getUser(req)
     if (!user) { res.writeHead(401); res.end('Connecte-toi pour sauvegarder en ligne'); return }
     let body = ''
     req.on('data', c => body += c)
