@@ -1,6 +1,6 @@
 import { game } from '../game/store.js'
 import { BUILDINGS, BUILD_SPOTS, VILLAGE } from '../game/constants/index.js'
-import { authHeaders } from './accounts.js'
+import { supabase } from './supabase.js'
 
 const RESOURCES = ['wood', 'fish', 'stone', 'berries', 'meteorite']
 
@@ -249,27 +249,35 @@ export function deleteLocal(id) {
   lsSave(lsIndex().filter((e) => e.id !== id))
 }
 
-// ── Server save (HTTP) ────────────────────────────────────────────────────────
+// ── Server save (Supabase Postgres, table `hamnet_worlds`, RLS'd to auth.uid()) ────
 
 export async function listServerSaves() {
-  const r = await fetch('/api/worlds', { headers: await authHeaders() })
-  return r.ok ? r.json() : []
+  const { data, error } = await supabase
+    .from('hamnet_worlds')
+    .select('id, name, saved_at')
+    .order('saved_at', { ascending: false })
+  if (error) return []
+  return data.map((w) => ({ id: w.id, name: w.name, savedAt: w.saved_at }))
 }
 
 export async function saveServer(world, id, name) {
-  const data = serializeWorld(world, { includeSpotsState: true })
-  data.name = name
-  data.id = id || undefined
-  const r = await fetch('/api/worlds', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-    body: JSON.stringify(data),
-  })
-  if (r.ok) { const { id: newId } = await r.json(); return newId }
-  return null
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+  const snap = serializeWorld(world, { includeSpotsState: true })
+  const row = { owner_id: user.id, name, data: snap }
+  if (id) row.id = id
+  const { data, error } = await supabase.from('hamnet_worlds').upsert(row).select('id').single()
+  return error ? null : data.id
 }
 
 export async function loadServer(id) {
-  const r = await fetch(`/api/worlds/${id}`, { headers: await authHeaders() })
-  return r.ok ? r.json() : null
+  const { data, error } = await supabase
+    .from('hamnet_worlds')
+    .select('name, data, saved_at')
+    .eq('id', id)
+    .maybeSingle()
+  if (error || !data) return null
+  return { ...data.data, name: data.name, id, savedAt: data.saved_at }
 }

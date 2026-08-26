@@ -1,7 +1,11 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { netState } from '../net/netState.js'
-import { connect, send, onMsg, disconnect, wsUrl } from '../net/socket.js'
+import {
+  createRoomAsHost, joinRoomAsGuest, broadcastState, leaveRoom,
+  onGuestJoined, onGuestLeft, onInput, onGuestMenuAction,
+  onState, onOpenMenu, onCloseMenu, onHostLeft, onDisconnected,
+} from '../net/realtime.js'
 import { serializeWorld, applyWorldState, listLocalSaves, loadLocal, deleteLocal, listServerSaves, loadServer } from '../net/sync.js'
 import { login, signup, logout } from '../net/accounts.js'
 import { engine } from '../game/engine.js'
@@ -103,46 +107,39 @@ function removeLocalSave(id) {
 async function createRoom(worldData = null, name = null) {
   error.value = ''; busy.value = true
   try {
-    await connect(wsUrl())
-    netState.connected = true
-
-    onMsg('room_created', ({ code }) => {
-      displayCode.value = code
-      netState.roomCode = code
-    })
-
-    onMsg('guest_joined', ({ guestId, name }) => {
+    onGuestJoined(({ guestId, name }) => {
       const p = engine.world.addRemotePlayer(guestId, name)
-      if (p) {
-        const snap = { ...serializeWorld(engine.world), guestPlayerId: p.id }
-        send({ type: 'state_for_guest', guestId, data: snap })
-      }
+      if (p) broadcastState({ ...serializeWorld(engine.world), guestPlayerId: p.id })
     })
 
-    onMsg('guest_left', ({ guestId }) => {
+    onGuestLeft(({ guestId }) => {
       const p = engine.world.players.find((pl) => pl.remoteGuestId === guestId)
       if (p) engine.world.removePlayer(p)
     })
 
-    onMsg('input', ({ guestId, input }) => {
+    onInput(({ guestId, input }) => {
       engine.world.applyRemoteInput(guestId, input)
     })
 
-    onMsg('guest_menu_action', ({ guestId, action }) => {
+    onGuestMenuAction(({ guestId, action }) => {
       engine.processGuestMenuAction(guestId, action)
     })
 
-    onMsg('_close', () => { netState.connected = false })
+    onDisconnected(() => { netState.connected = false })
+
+    const { code } = await createRoomAsHost()
+    netState.connected = true
+    displayCode.value = code
+    netState.roomCode = code
 
     if (worldData) applyWorldState(engine.world, worldData)
-    send({ type: 'create_room' })
 
     netState.worldName = name ?? worldData?.name ?? 'Mon monde'
     netState.mode = 'host'
     step.value = 'waiting_players'
   } catch {
     error.value = 'Impossible de se connecter au serveur'
-    disconnect()
+    leaveRoom()
   }
   busy.value = false
 }
@@ -166,40 +163,34 @@ async function joinRoom() {
   if (code.length !== 6) { error.value = 'Code invalide (6 caractères)'; return }
   error.value = ''; busy.value = true
   try {
-    await connect(wsUrl())
-    netState.connected = true
-
-    onMsg('room_joined', ({ code: c }) => {
-      netState.roomCode = c
-      netState.myPlayerId = null
+    onState((snap) => {
+      engine.applySnapshot(snap)
     })
 
-    onMsg('state', ({ data }) => {
-      engine.applySnapshot(data)
-    })
-
-    onMsg('open_menu', ({ buildingId }) => {
+    onOpenMenu(({ buildingId }) => {
       engine.applyRemoteMenuOpen(buildingId)
     })
 
-    onMsg('close_menu', () => {
+    onCloseMenu(() => {
       game.buildingMenuOpen = false
       game.menuOpen = false
       game.buildingMenuOpener = null
       game.menuOpener = null
     })
 
-    onMsg('error', ({ message }) => {
-      error.value = message
-    })
+    onHostLeft(() => { error.value = "L'hôte a quitté la partie" })
+    onDisconnected(() => { netState.connected = false })
 
-    onMsg('_close', () => { netState.connected = false })
-
-    send({ type: 'join_room', code, name: netState.playerName.trim() || null })
+    // Reset before joining: the very first `state` broadcast can arrive (and set
+    // myPlayerId from its guestPlayerId) before joinRoomAsGuest's promise resolves.
+    netState.myPlayerId = null
+    await joinRoomAsGuest(code, netState.playerName.trim() || null)
+    netState.connected = true
+    netState.roomCode = code
     netState.mode = 'guest'
-  } catch {
-    error.value = 'Impossible de se connecter au serveur'
-    disconnect()
+  } catch (e) {
+    error.value = e.message || 'Impossible de se connecter au serveur'
+    leaveRoom()
   }
   busy.value = false
 }

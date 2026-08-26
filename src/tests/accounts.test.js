@@ -4,20 +4,15 @@ const authMock = {
   signUp: vi.fn(),
   signInWithPassword: vi.fn(),
   signOut: vi.fn(),
-  getSession: vi.fn(),
 }
 
 vi.mock('../net/supabase.js', () => ({ supabase: { auth: authMock } }))
 
-const { signup, login, logout, fetchMe, authHeaders } = await import('../net/accounts.js')
+const { signup, login, logout } = await import('../net/accounts.js')
 
 beforeEach(() => {
   vi.restoreAllMocks()
 })
-
-function session(token, user) {
-  return { data: { session: { access_token: token, user } }, error: null }
-}
 
 describe('signup / login', () => {
   it('signup returns the user on success', async () => {
@@ -49,29 +44,5 @@ describe('logout', () => {
     authMock.signOut.mockResolvedValue({ error: null })
     await logout()
     expect(authMock.signOut).toHaveBeenCalled()
-  })
-})
-
-describe('fetchMe', () => {
-  it('returns null when signed out', async () => {
-    authMock.getSession.mockResolvedValue({ data: { session: null } })
-    expect(await fetchMe()).toBeNull()
-  })
-
-  it('returns the user when a session exists', async () => {
-    authMock.getSession.mockResolvedValue(session('tok', { id: 'u1', email: 'clement@example.com' }))
-    expect(await fetchMe()).toEqual({ id: 'u1', email: 'clement@example.com' })
-  })
-})
-
-describe('authHeaders', () => {
-  it('returns an empty object when signed out', async () => {
-    authMock.getSession.mockResolvedValue({ data: { session: null } })
-    expect(await authHeaders()).toEqual({})
-  })
-
-  it('returns a Bearer header when signed in', async () => {
-    authMock.getSession.mockResolvedValue(session('tok789', { id: 'u1', email: 'clement@example.com' }))
-    expect(await authHeaders()).toEqual({ Authorization: 'Bearer tok789' })
   })
 })

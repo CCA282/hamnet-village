@@ -42,7 +42,7 @@ Approchez le feu de camp pour ouvrir le menu et acheter des améliorations :
 - Vue 3 + Vite
 - Canvas 2D (pixel-art, nearest-neighbor scaling)
 - Aucun framework de jeu — moteur maison (~60 fps, RAF loop)
-- Le mode local ne dépend d'aucun backend. Le mode en ligne (`server/`) est un petit serveur Node (WebSocket + HTTP) qui relaie les rooms et stocke les sauvegardes — voir ci-dessous.
+- Aucun backend custom : le mode local ne dépend de rien, et le mode en ligne parle directement à [Supabase](https://supabase.com) — Realtime (Broadcast + Presence) relaie les rooms, Postgres stocke les sauvegardes. Voir ci-dessous.
 
 ## Build production
 
@@ -89,36 +89,69 @@ docker compose -f docker-compose.prod.yml up -d
 - `WATCHTOWER_CLEANUP=true` supprime les anciennes images après update, pour éviter d'accumuler des couches inutiles.
 - Le `docker compose -f docker-compose.prod.yml up -d` de la section précédente suffit à le démarrer — rien à installer en plus.
 
-## Comptes et sauvegardes
+## Comptes, multijoueur en ligne et sauvegardes
 
-L'authentification passe par [Supabase Auth](https://supabase.com) (email + mot de passe) — même projet Supabase que cine-planner. Hamnet ne stocke ni mot de passe ni compte lui-même : `server/` vérifie juste les tokens émis par Supabase.
+Tout passe par [Supabase](https://supabase.com) (même projet que `cine-planner`) — pas de backend custom :
+
+- **Auth** : email + mot de passe via Supabase Auth.
+- **Relay temps réel** (rooms host/guest) : un channel Supabase Realtime par room
+  (`hamnet:room:<CODE>`), Broadcast pour l'état du monde/inputs/menus, Presence pour
+  savoir qui est host/guest et détecter les join/leave — voir `src/net/realtime.js`.
+- **Sauvegardes** : table Postgres `hamnet_worlds`, RLS'd sur `auth.uid()` — voir
+  `src/net/sync.js`.
+
+> **Note** : `server/`, les Dockerfiles et `docker-compose*.yml` sont encore présents
+> dans ce repo mais ne sont plus utilisés par le frontend (plus aucun appel HTTP/WS
+> vers eux) — obsolètes en attendant une PR de nettoyage qui les supprime et bascule
+> l'hébergement du frontend vers un hébergeur statique (GitHub Pages).
 
 **Où est stockée une sauvegarde ?** Ça dépend uniquement de l'état de connexion, pas du mode de jeu (solo/multi) :
 
 | | Non connecté | Connecté (compte) |
 |---|---|---|
-| Stockage | `localStorage` du navigateur | Backend Hamnet (`server/`) |
+| Stockage | `localStorage` du navigateur | Table Postgres `hamnet_worlds` |
 | Visible sur un autre appareil | Non | Oui (même compte) |
-| Visible par d'autres joueurs | Non | Non — filtré par compte |
+| Visible par d'autres joueurs | Non | Non — RLS filtre par `owner_id` |
 
 Se connecter est **optionnel** : le solo/multi sans compte reste jouable normalement, juste sans persistance au-delà de cet appareil/navigateur.
 
-### Backend (`server/`)
+### Configuration Supabase requise
 
-- `POST /api/worlds`, `GET /api/worlds` (liste) et `GET /api/worlds/:id` (chargement) nécessitent désormais un header `Authorization: Bearer <token>` valide — sans compte, ces routes renvoient `401`.
-- Chaque sauvegarde est taguée `ownerId` (l'id du compte Supabase, un uuid) ; la liste et le chargement sont filtrés pour qu'un compte ne voie jamais les mondes d'un autre.
-- `SUPABASE_URL` / `SUPABASE_ANON_KEY` (variables d'env) pointent vers le même projet Supabase que le frontend — `server/` appelle `supabase.auth.getUser(token)` pour vérifier chaque requête (l'anon key suffit, aucune clé privilégiée n'est nécessaire côté serveur). Sans elles, le serveur démarre quand même (le multijoueur en direct sans sauvegarde fonctionne) mais toutes les routes `/api/worlds` renvoient `401`.
-- Les sauvegardes sont des fichiers JSON, un par monde, dans `DATA_DIR` (défaut `./data/worlds`, créé automatiquement). **`server/data/` n'est pas versionné** (voir `.gitignore`).
+En plus du projet Auth déjà configuré (voir `cine-planner`), créer la table `hamnet_worlds`
+dans le SQL Editor du projet :
+
+```sql
+create table hamnet_worlds (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid references auth.users not null,
+  name text not null,
+  data jsonb not null,
+  saved_at timestamptz not null default now()
+);
+create index hamnet_worlds_owner_saved_idx on hamnet_worlds (owner_id, saved_at desc);
+alter table hamnet_worlds enable row level security;
+create policy "own rows" on hamnet_worlds for all using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+grant select, insert, update, delete on table hamnet_worlds to authenticated;
+```
+
+`hamnet_` préfixe le nom de la table à dessein : le projet Supabase est partagé entre
+plusieurs jeux, chaque jeu doit préfixer ses propres objets (tables, topics Realtime)
+pour ne pas collisionner avec les autres.
 
 ### Frontend
 
-- `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (variables d'env au build) pointent vers le projet Supabase. Sans elles, l'app reste jouable mais sans compte (mode local uniquement) — voir `src/net/supabase.js`.
+- `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (variables d'env au build) pointent vers le projet Supabase. Sans elles, l'app reste jouable mais sans compte ni multijoueur en ligne (mode local uniquement) — voir `src/net/supabase.js`.
 - La session est gérée par `@supabase/supabase-js` (persistée en `localStorage` par le SDK) ; `netState.user` suit `supabase.auth.onAuthStateChange`.
 
-### En production
+### Ancien backend (`server/`, obsolète)
+
+<details>
+<summary>Documentation historique — server/ n'est plus appelé par le frontend</summary>
 
 Le `Dockerfile` de `server/` ne déclare pas de volume : sans configuration supplémentaire, `server/data/` vit dans le conteneur et **disparaît au redéploiement**. Pour persister les sauvegardes :
 
 - Monter `DATA_DIR` sur un volume persistant (ex. `docker run -v hamnet-saves:/app/data/worlds -e DATA_DIR=/app/data/worlds ...`, ou l'équivalent chez l'hébergeur utilisé).
 - Sauvegarder ce volume revient à sauvegarder ce dossier — un simple `tar`/`rsync` de `DATA_DIR` suffit (ce sont des fichiers JSON indépendants, pas de base de données à arrêter).
 - **Migrer** un monde vers un autre déploiement : copier le fichier `<id>.json` correspondant dans le `DATA_DIR` de la nouvelle instance ; l'ID redevient utilisable tel quel via `GET /api/worlds/:id`.
+
+</details>

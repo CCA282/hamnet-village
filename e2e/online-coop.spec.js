@@ -1,23 +1,24 @@
 import { test, expect } from '@playwright/test'
 import { spawnP1Keyboard, getWorldPlayers } from './helpers.js'
 
-async function mockWebSocket(page, { serverCode = 'ABC123' } = {}) {
+// Supabase Realtime (channels, presence, Phoenix wire protocol) is never actually reached in
+// this suite — src/net/realtime.js checks window.__HAMNET_REALTIME_TEST_HOOK__ before touching
+// supabase.channel(...), and these helpers install a fake hook instead. The hook is handed the
+// module's internal `dispatch` function and stashes it on window.__dispatch so tests can later
+// simulate more events (guest joining, disconnect, ...) the same way the old MockWebSocket tests
+// drove `window.__ws.onmessage`.
+
+async function mockRealtimeHost(page, { serverCode = 'ABC123' } = {}) {
   await page.addInitScript(({ serverCode }) => {
-    window.__ws = null
-    window.WebSocket = class MockWebSocket {
-      constructor(url) {
-        this.url = url
-        this.readyState = 1 // OPEN
-        window.__ws = this
-        Promise.resolve().then(() => {
-          this.onopen?.()
-          setTimeout(() => {
-            this.onmessage?.({ data: JSON.stringify({ type: 'room_created', code: serverCode }) })
-          }, 80)
+    window.__dispatch = null
+    window.__HAMNET_REALTIME_TEST_HOOK__ = {
+      createRoomAsHost(dispatch) {
+        window.__dispatch = dispatch
+        return new Promise((resolve) => {
+          setTimeout(() => resolve({ code: serverCode, hostId: 'test-host' }), 80)
         })
-      }
-      send(data) {}
-      close() { this.onclose?.() }
+      },
+      leaveRoom() {},
     }
   }, { serverCode })
 }
@@ -43,27 +44,23 @@ function mockPlayerSnapshot() {
   }
 }
 
-// Guest-side mock: connects, then sends room_joined + an initial state snapshot.
-async function mockWebSocketGuest(page, { code = 'ABC123', snapshot = mockPlayerSnapshot() } = {}) {
-  await page.addInitScript(({ code, snapshot }) => {
-    window.__ws = null
-    window.WebSocket = class MockWebSocket {
-      constructor(url) {
-        this.url = url
-        this.readyState = 1 // OPEN
-        window.__ws = this
-        Promise.resolve().then(() => {
-          this.onopen?.()
+// Guest-side mock: resolves the join, then dispatches an initial `state` snapshot.
+async function mockRealtimeGuest(page, { snapshot = mockPlayerSnapshot() } = {}) {
+  await page.addInitScript(({ snapshot }) => {
+    window.__dispatch = null
+    window.__HAMNET_REALTIME_TEST_HOOK__ = {
+      joinRoomAsGuest(code, name, dispatch) {
+        window.__dispatch = dispatch
+        return new Promise((resolve) => {
           setTimeout(() => {
-            this.onmessage?.({ data: JSON.stringify({ type: 'room_joined', code }) })
-            this.onmessage?.({ data: JSON.stringify({ type: 'state', data: snapshot }) })
+            dispatch('state', snapshot)
+            resolve({ guestId: 'test-guest' })
           }, 80)
         })
-      }
-      send(data) {}
-      close() { this.onclose?.() }
+      },
+      leaveRoom() {},
     }
-  }, { code, snapshot })
+  }, { snapshot })
 }
 
 async function navigateAndJoinRoom(page, code = 'ABC123') {
@@ -81,21 +78,21 @@ test.describe('Online multiplayer — host side', () => {
   })
 
   test('host: creates room and receives code from server', async ({ page }) => {
-    await mockWebSocket(page, { serverCode: 'ROOM42' })
+    await mockRealtimeHost(page, { serverCode: 'ROOM42' })
     await navigateToOnlineRoom(page)
-    // Room code appears in .room-code after room_created message
+    // Room code appears in .room-code once createRoomAsHost() resolves
     await expect(page.locator('.room-code').first()).toContainText('ROOM42', { timeout: 5_000 })
   })
 
   test('host: canvas is rendered after room creation', async ({ page }) => {
-    await mockWebSocket(page, { serverCode: 'ROOM43' })
+    await mockRealtimeHost(page, { serverCode: 'ROOM43' })
     await navigateToOnlineRoom(page)
     await page.waitForSelector('canvas', { timeout: 8_000 })
     await expect(page.locator('canvas')).toBeVisible()
   })
 
   test('host: can spawn a local player (keyboard, lobby may be overlaid)', async ({ page }) => {
-    await mockWebSocket(page, { serverCode: 'ROOM44' })
+    await mockRealtimeHost(page, { serverCode: 'ROOM44' })
     await navigateToOnlineRoom(page)
     await page.waitForSelector('canvas', { timeout: 8_000 })
     await page.waitForTimeout(200)
@@ -107,18 +104,16 @@ test.describe('Online multiplayer — host side', () => {
   })
 
   test('host: guest join adds remote player to world', async ({ page }) => {
-    await mockWebSocket(page, { serverCode: 'ROOM45' })
+    await mockRealtimeHost(page, { serverCode: 'ROOM45' })
     await navigateToOnlineRoom(page)
     await page.waitForSelector('canvas', { timeout: 8_000 })
     await page.waitForTimeout(200)
 
     await spawnP1Keyboard(page)
 
-    // Simulate guest_joined from mock server
+    // Simulate a guest's presence "join" being dispatched by the (fake) realtime channel
     await page.evaluate(() => {
-      window.__ws?.onmessage?.({
-        data: JSON.stringify({ type: 'guest_joined', guestId: 'g-001', name: 'Bob' }),
-      })
+      window.__dispatch?.('guest_joined', { guestId: 'g-001', name: 'Bob' })
     })
 
     await page.waitForFunction(
@@ -155,7 +150,7 @@ test.describe('Online multiplayer — guest side (UI)', () => {
 
 test.describe('Online multiplayer — guest side (connection loss)', () => {
   test('guest: joining applies host state and marks connected', async ({ page }) => {
-    await mockWebSocketGuest(page, { code: 'GST001' })
+    await mockRealtimeGuest(page)
     await navigateAndJoinRoom(page, 'GST001')
 
     await page.waitForFunction(() => window.__netState?.mode === 'guest', { timeout: 5_000 })
@@ -169,13 +164,13 @@ test.describe('Online multiplayer — guest side (connection loss)', () => {
     const errors = []
     page.on('pageerror', (e) => errors.push(e.message))
 
-    await mockWebSocketGuest(page, { code: 'GST002' })
+    await mockRealtimeGuest(page)
     await navigateAndJoinRoom(page, 'GST002')
     await page.waitForFunction(() => window.__netState?.mode === 'guest', { timeout: 5_000 })
     await page.waitForFunction(() => window.__engine?.world?.players?.length >= 1, { timeout: 5_000 })
 
-    // Simulate the server dropping the connection (network loss, host closed, etc.)
-    await page.evaluate(() => window.__ws.close())
+    // Simulate the realtime channel dropping (network loss, etc.)
+    await page.evaluate(() => window.__dispatch?.('disconnected'))
 
     await page.waitForFunction(() => window.__netState?.connected === false, { timeout: 3_000 })
 

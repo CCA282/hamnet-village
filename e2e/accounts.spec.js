@@ -90,9 +90,9 @@ test.describe('Comptes — connexion / inscription', () => {
 })
 
 test.describe('Comptes — sauvegarde liée au compte', () => {
-  test('saving while logged in sends the account token to the backend', async ({ page }) => {
+  test('saving while logged in upserts to hamnet_worlds with the account token', async ({ page }) => {
     let capturedAuth = null
-    await page.route('**/api/worlds', (route) => {
+    await page.route(`${SUPABASE_URL}/rest/v1/hamnet_worlds*`, (route) => {
       capturedAuth = route.request().headers()['authorization']
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'w1' }) })
     })
@@ -111,9 +111,9 @@ test.describe('Comptes — sauvegarde liée au compte', () => {
     expect(capturedAuth).toBe('Bearer tok-carole')
   })
 
-  test('saving while signed out never calls the backend and stays resumable locally', async ({ page }) => {
+  test('saving while signed out never calls hamnet_worlds and stays resumable locally', async ({ page }) => {
     let apiCalled = false
-    await page.route('**/api/worlds', (route) => {
+    await page.route(`${SUPABASE_URL}/rest/v1/hamnet_worlds*`, (route) => {
       apiCalled = true
       route.fulfill({ status: 401, body: 'Connecte-toi' })
     })
