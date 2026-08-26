@@ -1,7 +1,7 @@
 import { World } from './world/World.js'
 import { Input } from './input/index.js'
 import { netState } from '../net/netState.js'
-import { send, disconnect } from '../net/socket.js'
+import { broadcastState, sendInput, sendGuestMenuAction as realtimeSendGuestMenuAction, broadcastMenuOpenForGuest, broadcastMenuCloseForGuest, leaveRoom } from '../net/realtime.js'
 import { serializeWorld, applyWorldState } from '../net/sync.js'
 import { resetGame, buyUpgrade, buyBuildingUpgrade } from './store.js'
 import { game } from './store.js'
@@ -73,20 +73,20 @@ class Engine {
     if (this.world._pendingRemoteMenuOpen) {
       const { guestId, buildingId } = this.world._pendingRemoteMenuOpen
       this.world._pendingRemoteMenuOpen = null
-      send({ type: 'open_menu_for_guest', guestId, buildingId: buildingId ?? null })
+      broadcastMenuOpenForGuest(guestId, buildingId ?? null)
     }
     // Notify guest if their remote player's menu was closed (e.g. cancel key)
     if (this.world._pendingRemoteMenuClose) {
       const { guestId } = this.world._pendingRemoteMenuClose
       this.world._pendingRemoteMenuClose = null
-      send({ type: 'close_menu_for_guest', guestId })
+      broadcastMenuCloseForGuest(guestId)
     }
     this._syncTimer += dt
     if (this._syncTimer >= 0.033) {
       this._syncTimer = 0
       const snap = serializeWorld(this.world, { includeSpotsState: true })
       this.world._lastProduced = []
-      send({ type: 'state', data: snap })
+      broadcastState(snap)
     }
   }
 
@@ -99,7 +99,7 @@ class Engine {
     this._inputTimer += dt
     if (this._inputTimer >= 0.033) {
       this._inputTimer = 0
-      send({ type: 'input', input: {
+      sendInput({
         mx: s.mx || 0,
         my: s.my || 0,
         action: this._pendingAction,
@@ -109,7 +109,7 @@ class Engine {
         down:  this.input.keyDown('KeyS'),
         left:  this.input.keyDown('KeyA'),
         right: this.input.keyDown('KeyD'),
-      }})
+      })
       this._pendingAction = false
       this._pendingCancel = false
     }
@@ -143,7 +143,7 @@ class Engine {
 
   // Guest: send a menu action to host
   sendGuestMenuAction(action) {
-    send({ type: 'guest_menu_action', action })
+    realtimeSendGuestMenuAction(action)
     this._pendingAction = false
     this._pendingCancel = false
   }
@@ -170,7 +170,7 @@ class Engine {
 
   reset() {
     this.stop()
-    disconnect()
+    leaveRoom()
     resetGame()
     this.world = new World()
     this._syncTimer = 0

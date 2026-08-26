@@ -19,16 +19,3 @@ export async function login(email, password) {
 export async function logout() {
   await supabase.auth.signOut()
 }
-
-// Session courante, ou null si signé out / Supabase pas configuré.
-export async function fetchMe() {
-  const { data } = await supabase.auth.getSession()
-  return toUser(data.session?.user)
-}
-
-// Header à joindre aux requêtes vers server/index.js (vérifie ce JWT auprès de Supabase).
-export async function authHeaders() {
-  const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}

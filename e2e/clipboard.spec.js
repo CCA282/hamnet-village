@@ -9,24 +9,20 @@
 
 import { test, expect } from '@playwright/test'
 
-// ── Shared mock WebSocket helpers ─────────────────────────────────────────────
+// ── Shared realtime test-hook helpers ─────────────────────────────────────────
+// See src/net/realtime.js: it checks window.__HAMNET_REALTIME_TEST_HOOK__ before
+// touching supabase.channel(...), so these fakes avoid depending on a real project.
 
 async function setupHostLobby(page) {
   await page.addInitScript(() => {
-    window.__mockWs = null
-    window.WebSocket = class MockWebSocket {
-      constructor() {
-        this.readyState = 1
-        window.__mockWs = this
-        Promise.resolve().then(() => {
-          this.onopen?.()
-          setTimeout(() => {
-            this.onmessage?.({ data: JSON.stringify({ type: 'room_created', code: 'TEST01' }) })
-          }, 80)
+    window.__HAMNET_REALTIME_TEST_HOOK__ = {
+      createRoomAsHost(dispatch) {
+        window.__dispatch = dispatch
+        return new Promise((resolve) => {
+          setTimeout(() => resolve({ code: 'TEST01', hostId: 'test-host' }), 80)
         })
-      }
-      send() {}
-      close() { this.onclose?.() }
+      },
+      leaveRoom() {},
     }
   })
   await page.goto('/')
@@ -114,23 +110,17 @@ test.describe('Guest — hintOverride shown in .hint', () => {
   async function setupGuestGame(page) {
     const snap = GUEST_SNAP
     await page.addInitScript((snapData) => {
-      window.__mockWs = null
-      window.WebSocket = class MockWebSocket {
-        constructor() {
-          this.readyState = 1
-          window.__mockWs = this
-          Promise.resolve().then(() => {
-            this.onopen?.()
+      window.__HAMNET_REALTIME_TEST_HOOK__ = {
+        joinRoomAsGuest(code, name, dispatch) {
+          window.__dispatch = dispatch
+          return new Promise((resolve) => {
             setTimeout(() => {
-              this.onmessage?.({ data: JSON.stringify({ type: 'room_joined', code: 'HOST01' }) })
-            }, 40)
-            setTimeout(() => {
-              this.onmessage?.({ data: JSON.stringify({ type: 'state', data: snapData }) })
+              dispatch('state', snapData)
+              resolve({ guestId: 'test-guest' })
             }, 80)
           })
-        }
-        send() {}
-        close() { this.onclose?.() }
+        },
+        leaveRoom() {},
       }
     }, snap)
     await page.goto('/')

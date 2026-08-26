@@ -419,22 +419,21 @@ test.describe('Local co-op — occupied hints', () => {
 // ── Online host ───────────────────────────────────────────────────────────────
 
 test.describe('Online host — menus', () => {
+  // Supabase Realtime is never reached here — src/net/realtime.js checks
+  // window.__HAMNET_REALTIME_TEST_HOOK__ before touching supabase.channel(...), and this
+  // installs a fake hook instead. It stashes the module's internal `dispatch` on
+  // window.__dispatch so tests can simulate further events (a guest joining, etc).
   async function setupHostGame(page) {
     await page.addInitScript(() => {
-      window.__mockWs = null
-      window.WebSocket = class MockWebSocket {
-        constructor(url) {
-          this.readyState = 1
-          window.__mockWs = this
-          Promise.resolve().then(() => {
-            this.onopen?.()
-            setTimeout(() => {
-              this.onmessage?.({ data: JSON.stringify({ type: 'room_created', code: 'HOST01' }) })
-            }, 80)
+      window.__dispatch = null
+      window.__HAMNET_REALTIME_TEST_HOOK__ = {
+        createRoomAsHost(dispatch) {
+          window.__dispatch = dispatch
+          return new Promise((resolve) => {
+            setTimeout(() => resolve({ code: 'HOST01', hostId: 'test-host' }), 80)
           })
-        }
-        send() {}
-        close() { this.onclose?.() }
+        },
+        leaveRoom() {},
       }
     })
     await page.goto('/')
@@ -463,9 +462,7 @@ test.describe('Online host — menus', () => {
   test('host: guest player joining adds a remote player to world', async ({ page }) => {
     await setupHostGame(page)
     await page.evaluate(() => {
-      window.__mockWs?.onmessage?.({
-        data: JSON.stringify({ type: 'guest_joined', guestId: 'g-001', name: 'Alice' }),
-      })
+      window.__dispatch?.('guest_joined', { guestId: 'g-001', name: 'Alice' })
     })
     await page.waitForFunction(() => window.__engine?.world?.players?.length >= 2, { timeout: 3_000 })
     const players = await getWorldPlayers(page)
@@ -477,9 +474,7 @@ test.describe('Online host — menus', () => {
     await setupHostGame(page)
     // Simulate guest_joined
     await page.evaluate(() => {
-      window.__mockWs?.onmessage?.({
-        data: JSON.stringify({ type: 'guest_joined', guestId: 'g-001', name: 'Bob' }),
-      })
+      window.__dispatch?.('guest_joined', { guestId: 'g-001', name: 'Bob' })
     })
     await page.waitForFunction(() => window.__engine?.world?.players?.length >= 2, { timeout: 3_000 })
 
@@ -499,9 +494,7 @@ test.describe('Online host — menus', () => {
     await setupHostGame(page)
     // Add a remote player
     await page.evaluate(() => {
-      window.__mockWs?.onmessage?.({
-        data: JSON.stringify({ type: 'guest_joined', guestId: 'g-001', name: 'Bob' }),
-      })
+      window.__dispatch?.('guest_joined', { guestId: 'g-001', name: 'Bob' })
     })
     await page.waitForFunction(() => window.__engine?.world?.players?.length >= 2, { timeout: 3_000 })
 
@@ -543,25 +536,19 @@ test.describe('Online guest — menus', () => {
   async function setupGuestGame(page) {
     const snap = GUEST_SNAP
     await page.addInitScript((snapData) => {
-      window.__mockWs = null
-      window.WebSocket = class MockWebSocket {
-        constructor() {
-          this.readyState = 1
-          window.__mockWs = this
-          Promise.resolve().then(() => {
-            this.onopen?.()
-            // room_joined: server acknowledges join
-            setTimeout(() => {
-              this.onmessage?.({ data: JSON.stringify({ type: 'room_joined', code: 'HOST01' }) })
-            }, 40)
+      window.__dispatch = null
+      window.__HAMNET_REALTIME_TEST_HOOK__ = {
+        joinRoomAsGuest(code, name, dispatch) {
+          window.__dispatch = dispatch
+          return new Promise((resolve) => {
             // state: host sends world snapshot with guestPlayerId
             setTimeout(() => {
-              this.onmessage?.({ data: JSON.stringify({ type: 'state', data: snapData }) })
+              dispatch('state', snapData)
+              resolve({ guestId: 'g-me' })
             }, 80)
           })
-        }
-        send() {}
-        close() { this.onclose?.() }
+        },
+        leaveRoom() {},
       }
     }, snap)
     await page.goto('/')
@@ -583,7 +570,7 @@ test.describe('Online guest — menus', () => {
     await setupGuestGame(page)
     // Simulate host sending open_menu
     await page.evaluate(() => {
-      window.__mockWs?.onmessage?.({ data: JSON.stringify({ type: 'open_menu', buildingId: null }) })
+      window.__dispatch?.('open_menu', { buildingId: null })
     })
     await page.waitForFunction(() => window.__game?.menuOpen === true, { timeout: 2_000 })
     await expect(page.locator('.scrim')).toBeVisible()
@@ -593,11 +580,11 @@ test.describe('Online guest — menus', () => {
     await setupGuestGame(page)
     // Open then close
     await page.evaluate(() => {
-      window.__mockWs?.onmessage?.({ data: JSON.stringify({ type: 'open_menu', buildingId: null }) })
+      window.__dispatch?.('open_menu', { buildingId: null })
     })
     await page.waitForFunction(() => window.__game?.menuOpen === true, { timeout: 2_000 })
     await page.evaluate(() => {
-      window.__mockWs?.onmessage?.({ data: JSON.stringify({ type: 'close_menu' }) })
+      window.__dispatch?.('close_menu', {})
     })
     await page.waitForFunction(() => window.__game?.menuOpen === false, { timeout: 2_000 })
     await expect(page.locator('.scrim')).not.toBeVisible()

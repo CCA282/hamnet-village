@@ -11,15 +11,30 @@ function makeLocalStorage() {
 }
 vi.stubGlobal('localStorage', makeLocalStorage())
 
-let currentSession = null
-vi.mock('../net/supabase.js', () => ({
-  supabase: { auth: { getSession: () => Promise.resolve({ data: { session: currentSession } }) } },
-}))
+// Minimal stand-in for supabase-js's PostgrestFilterBuilder: every chain method returns
+// the same thenable object, so `await supabase.from(...).select(...).order(...)` (or any
+// other call order our code actually uses) resolves to whatever `result` was configured.
+function makeQueryBuilder(result) {
+  const builder = {
+    select: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    eq: vi.fn(() => builder),
+    upsert: vi.fn(() => builder),
+    maybeSingle: vi.fn(() => builder),
+    single: vi.fn(() => builder),
+    then: (resolve) => resolve(result),
+  }
+  return builder
+}
+
+const supabaseMock = { auth: { getUser: vi.fn() }, from: vi.fn() }
+vi.mock('../net/supabase.js', () => ({ supabase: supabaseMock }))
 
 const { saveLocal, loadLocal, listLocalSaves, deleteLocal, saveServer, listServerSaves, loadServer } = await import('../net/sync.js')
 const { resetGame } = await import('../game/store.js')
 
-function signIn(token) { currentSession = { access_token: token } }
+function signIn(userId) { supabaseMock.auth.getUser.mockResolvedValue({ data: { user: { id: userId } } }) }
+function signOut() { supabaseMock.auth.getUser.mockResolvedValue({ data: { user: null } }) }
 
 function makeWorld() {
   return {
@@ -30,18 +45,13 @@ function makeWorld() {
   }
 }
 
-function mockFetchOnce(status, body) {
-  globalThis.fetch = vi.fn().mockResolvedValue({
-    ok: status >= 200 && status < 300,
-    json: async () => body,
-  })
-}
-
 beforeEach(() => {
   localStorage.clear()
-  currentSession = null
   resetGame()
-  vi.restoreAllMocks()
+  // restoreAllMocks() only affects vi.spyOn spies — supabaseMock's plain vi.fn()s need an
+  // explicit reset, otherwise a previous test's mockReturnValue/call history leaks through.
+  supabaseMock.from.mockReset()
+  supabaseMock.auth.getUser.mockReset()
 })
 
 // ── localStorage (sans compte) ──────────────────────────────────────────────
@@ -81,51 +91,59 @@ describe('saveLocal / loadLocal / listLocalSaves / deleteLocal', () => {
   })
 })
 
-// ── Backend (avec compte) ────────────────────────────────────────────────────
+// ── Backend (Supabase Postgres, table `hamnet_worlds`) ──────────────────────────
 
 describe('saveServer / listServerSaves / loadServer', () => {
-  it('saveServer attaches the Authorization header when signed in', async () => {
-    signIn('tok123')
-    mockFetchOnce(200, { id: 'w1' })
+  it('saveServer upserts a row tagged with owner_id when signed in', async () => {
+    signIn('u1')
+    const builder = makeQueryBuilder({ data: { id: 'w1' }, error: null })
+    supabaseMock.from.mockReturnValue(builder)
+
     const id = await saveServer(makeWorld(), 'w1', 'Mon monde')
+
     expect(id).toBe('w1')
-    const [, options] = fetch.mock.calls[0]
-    expect(options.headers.Authorization).toBe('Bearer tok123')
+    expect(supabaseMock.from).toHaveBeenCalledWith('hamnet_worlds')
+    expect(builder.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ owner_id: 'u1', name: 'Mon monde', id: 'w1' }),
+    )
   })
 
-  it('saveServer omits the Authorization header when signed out', async () => {
-    mockFetchOnce(200, { id: 'w1' })
-    await saveServer(makeWorld(), 'w1', 'Mon monde')
-    const [, options] = fetch.mock.calls[0]
-    expect(options.headers.Authorization).toBeUndefined()
+  it('saveServer returns null without querying when signed out', async () => {
+    signOut()
+    const id = await saveServer(makeWorld(), 'w1', 'Mon monde')
+    expect(id).toBeNull()
+    expect(supabaseMock.from).not.toHaveBeenCalled()
   })
 
-  it('saveServer returns null when the backend rejects the request', async () => {
-    mockFetchOnce(401, 'Connecte-toi')
+  it('saveServer returns null when the upsert fails', async () => {
+    signIn('u1')
+    supabaseMock.from.mockReturnValue(makeQueryBuilder({ data: null, error: new Error('boom') }))
     expect(await saveServer(makeWorld(), 'w1', 'Mon monde')).toBeNull()
   })
 
-  it('listServerSaves sends the Authorization header and returns the list', async () => {
-    signIn('tok123')
-    mockFetchOnce(200, [{ id: 'w1', name: 'Mon monde' }])
+  it('listServerSaves returns the mapped list on success', async () => {
+    supabaseMock.from.mockReturnValue(
+      makeQueryBuilder({ data: [{ id: 'w1', name: 'Mon monde', saved_at: '2026-01-01' }], error: null }),
+    )
     const list = await listServerSaves()
-    expect(list).toEqual([{ id: 'w1', name: 'Mon monde' }])
-    const [, options] = fetch.mock.calls[0]
-    expect(options.headers.Authorization).toBe('Bearer tok123')
+    expect(list).toEqual([{ id: 'w1', name: 'Mon monde', savedAt: '2026-01-01' }])
+    expect(supabaseMock.from).toHaveBeenCalledWith('hamnet_worlds')
   })
 
-  it('listServerSaves returns [] when signed out (401)', async () => {
-    mockFetchOnce(401, 'Connecte-toi')
+  it('listServerSaves returns [] on error (e.g. signed out, RLS denies)', async () => {
+    supabaseMock.from.mockReturnValue(makeQueryBuilder({ data: null, error: new Error('denied') }))
     expect(await listServerSaves()).toEqual([])
   })
 
-  it('loadServer returns the world on success', async () => {
-    mockFetchOnce(200, { id: 'w1', name: 'Mon monde' })
-    expect(await loadServer('w1')).toEqual({ id: 'w1', name: 'Mon monde' })
+  it('loadServer merges the row metadata back onto the flat snapshot', async () => {
+    supabaseMock.from.mockReturnValue(
+      makeQueryBuilder({ data: { name: 'Mon monde', data: { wood: 3 }, saved_at: '2026-01-01' }, error: null }),
+    )
+    expect(await loadServer('w1')).toEqual({ wood: 3, name: 'Mon monde', id: 'w1', savedAt: '2026-01-01' })
   })
 
   it('loadServer returns null on failure (e.g. owned by another account)', async () => {
-    mockFetchOnce(404, 'Not found')
+    supabaseMock.from.mockReturnValue(makeQueryBuilder({ data: null, error: null }))
     expect(await loadServer('w1')).toBeNull()
   })
 })
