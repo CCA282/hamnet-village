@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-export default defineConfig({
+export default defineConfig(({ command, isPreview }) => ({
+  base: command === 'build' || isPreview ? '/hamnet-village/' : '/',
   plugins: [vue()],
   server: {
     host: true,
@@ -13,4 +14,4 @@ export default defineConfig({
     environment: 'node',
     exclude: ['**/node_modules/**', '**/e2e/**'],
   },
-})
+}))

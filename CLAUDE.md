@@ -21,7 +21,7 @@ After any change, run `npm run build` — after a change touching game logic or 
 
 ## Architecture
 
-**Petit Hameau** is a cozy co-op idle game, playable **local** (couch co-op, no backend) or **online** (a small Node server relays rooms and can persist saves). Frontend: Vue 3 + Vite. The game loop runs on a `<canvas>`, UI overlays are Vue components.
+**Petit Hameau** is a cozy co-op idle game, playable **local** (couch co-op, no backend) or **online** (Supabase Realtime relays rooms, Postgres can persist saves — no custom backend). Frontend: Vue 3 + Vite. The game loop runs on a `<canvas>`, UI overlays are Vue components.
 
 ### Two rendering layers
 
@@ -57,7 +57,6 @@ Input (keyboard/pad/touch/mouse)
 | `src/net/netState.js` | Non-canvas reactive state: `mode` (`local`/`host`/`guest`), room code, `user` (signed-in account or `null`) |
 | `src/net/supabase.js` | Supabase client (`createClient`), reads `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` |
 | `src/net/accounts.js` | `signup`/`login`/`logout` — thin wrapper around `supabase.auth.*` |
-| `server/index.js` | **Vestigial** — the old Node WS/HTTP relay, no longer called by the frontend (kept until a follow-up removes it + Docker/NAS, see "Multijoueur en ligne") |
 
 ### World module pattern
 
@@ -110,19 +109,19 @@ Auth is delegated to Supabase Auth (email + password) — same Supabase project 
 
 ### Multijoueur en ligne et sauvegardes (Supabase Realtime + Postgres)
 
-**No custom backend** — `server/` is vestigial (see file map above), kept only until a follow-up PR removes it along with Docker/the NAS deployment and moves the static frontend to GitHub Pages. Both jobs it used to do now go straight to Supabase, same project as auth:
+**No custom backend** — the old Node WS/HTTP relay (`server/`), the Dockerfiles/`docker-compose*.yml`, and the NAS/Watchtower deployment have been removed; the static frontend now deploys straight to GitHub Pages (`.github/workflows/pages-deploy.yml`, on push to `main`). Both jobs `server/` used to do now go straight to Supabase, same project as auth:
 
 - **Room relay**: one Realtime channel per room, topic `hamnet:room:<CODE>` (the `hamnet:` prefix matters — Realtime topics are a namespace shared by every game on this Supabase project, so an unprefixed code could collide with another game's channel). `src/net/realtime.js` is the only file that touches `supabase.channel(...)` — everything else (`Lobby.vue`, `engine.js`) calls its named functions (`createRoomAsHost`, `joinRoomAsGuest`, `broadcastState`, `sendInput`, `sendGuestMenuAction`, `broadcastMenuOpenForGuest`/`broadcastMenuCloseForGuest`) and callbacks (`onState`, `onInput`, `onGuestJoined`/`onGuestLeft`, `onOpenMenu`/`onCloseMenu`, `onGuestMenuAction`, `onHostLeft`, `onDisconnected`). Host/guest roles and join/leave are tracked via Presence, not a server-side room registry — there's no central authority to ask "does this room exist", so a guest joining an unknown code is detected client-side by a short timeout (no host presence, no `state` broadcast) rather than an immediate server refusal.
 - **Saves**: table `hamnet_worlds` (Postgres, RLS'd to `auth.uid() = owner_id`) — see `src/net/sync.js`. Signed in → reads/writes that table directly via `supabase.from('hamnet_worlds')`; signed out → `localStorage` only, nothing sent anywhere. The table must be created manually in the Supabase SQL editor (see README "Configuration Supabase requise") — it doesn't exist by default on a fresh project.
 
 Where a save lives depends **only** on `netState.user` (signed in or not), not on local/host mode.
 
-Note: this is a full re-architecture from the previous accounts-service/custom-server setup (see git history) — old accounts-service user ids and any world saved through the old `server/` HTTP API don't carry over.
+Note: this is a full re-architecture from the previous accounts-service/custom-server setup (see git history) — old accounts-service user ids and any world saved through the old `server/` HTTP API (removed) don't carry over.
 
 ### Tests
 
 - **Unit** (`npm run test`, vitest, `src/tests/`): pure game-logic and `src/net/` modules. `localStorage`/`fetch` aren't available in the `node` test environment — stub them with `vi.stubGlobal(...)` at the top of the file before importing the module under test. `src/net/supabase.js` is mocked with `vi.mock('../net/supabase.js', ...)` rather than stubbing `fetch`, since `@supabase/supabase-js` isn't a thin fetch wrapper (see `src/tests/accounts.test.js`, `sync-storage.test.js`).
-- **E2E** (`npm run test:e2e`, Playwright, `e2e/`): drives a real browser against `npm run dev`. **Nothing in `server/` or Supabase actually runs in CI**:
+- **E2E** (`npm run test:e2e`, Playwright, `e2e/`): drives a real browser against `npm run dev`. **Nothing in Supabase actually runs in CI**:
   - `playwright.config.js`'s `webServer.env` forces `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` empty regardless of a local `.env` — the client falls back to the fixed placeholder `https://not-configured.supabase.co` (see `src/net/supabase.js`). Without this override, e2e would silently hit whatever real project the local `.env` points at. Supabase Auth REST calls (`/auth/v1/*`) and PostgREST calls (`/rest/v1/hamnet_worlds*`) are intercepted against that placeholder host with `page.route()` (see `accounts.spec.js`).
   - Realtime (channels/presence/Phoenix wire protocol) is never touched: `src/net/realtime.js` checks `window.__HAMNET_REALTIME_TEST_HOOK__` before calling `supabase.channel(...)`, and e2e specs install a fake hook via `page.addInitScript` instead (see `online-coop.spec.js`, `menus-hints.spec.js`, `clipboard.spec.js`) — the hook is handed the module's internal `dispatch` and stashes it on `window.__dispatch` so a test can later simulate more events (a guest joining, a disconnect) the same way one would drive a mock WebSocket's `onmessage`.
   - Keep it that way — e2e tests must never assume a real backend or Supabase project is reachable.
