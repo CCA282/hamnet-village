@@ -54,6 +54,22 @@ export async function createRoomAsHost() {
     code = genCode()
     const ch = supabase.channel(ROOM_PREFIX + code, { config: { presence: { key: _myId } } })
     let subscribed = false
+
+    // Presence listeners must be registered before subscribe() — realtime-js throws
+    // if they're added once the channel has already joined.
+    ch.on('presence', { event: 'join' }, ({ newPresences }) => {
+      for (const p of newPresences) {
+        if (p.role === 'guest') dispatch('guest_joined', { guestId: p.guestId, name: p.name ?? null })
+      }
+    })
+    ch.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+      for (const p of leftPresences) {
+        if (p.role === 'guest') dispatch('guest_left', { guestId: p.guestId })
+      }
+    })
+    ch.on('broadcast', { event: 'input' }, ({ payload }) => dispatch('input', payload))
+    ch.on('broadcast', { event: 'guest_menu_action' }, ({ payload }) => dispatch('guest_menu_action', payload))
+
     const alreadyTaken = await new Promise((resolve) => {
       ch.on('presence', { event: 'sync' }, () => {
         resolve(presenceEntries(ch.presenceState()).some((p) => p.role === 'host'))
@@ -67,19 +83,6 @@ export async function createRoomAsHost() {
     if (!alreadyTaken) { _channel = ch; break }
     await supabase.removeChannel(ch)
   }
-
-  _channel.on('presence', { event: 'join' }, ({ newPresences }) => {
-    for (const p of newPresences) {
-      if (p.role === 'guest') dispatch('guest_joined', { guestId: p.guestId, name: p.name ?? null })
-    }
-  })
-  _channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
-    for (const p of leftPresences) {
-      if (p.role === 'guest') dispatch('guest_left', { guestId: p.guestId })
-    }
-  })
-  _channel.on('broadcast', { event: 'input' }, ({ payload }) => dispatch('input', payload))
-  _channel.on('broadcast', { event: 'guest_menu_action' }, ({ payload }) => dispatch('guest_menu_action', payload))
 
   await _channel.track({ role: 'host', hostId: _myId })
   return { code, hostId: _myId }
@@ -98,6 +101,18 @@ export async function joinRoomAsGuest(code, name) {
   const ch = supabase.channel(ROOM_PREFIX + code, { config: { presence: { key: _myId } } })
   _channel = ch
   let subscribed = false
+
+  // Presence listeners must be registered before subscribe() — realtime-js throws
+  // if they're added once the channel has already joined.
+  ch.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+    if (leftPresences.some((p) => p.role === 'host')) dispatch('host_left')
+  })
+  ch.on('broadcast', { event: 'open_menu' }, ({ payload }) => {
+    if (payload.guestId === _myId) dispatch('open_menu', payload)
+  })
+  ch.on('broadcast', { event: 'close_menu' }, ({ payload }) => {
+    if (payload.guestId === _myId) dispatch('close_menu', payload)
+  })
 
   const hostSeen = await new Promise((resolve) => {
     const timer = setTimeout(() => resolve(false), JOIN_TIMEOUT_MS)
@@ -125,16 +140,6 @@ export async function joinRoomAsGuest(code, name) {
     _channel = null
     throw new Error('Room introuvable')
   }
-
-  ch.on('presence', { event: 'leave' }, ({ leftPresences }) => {
-    if (leftPresences.some((p) => p.role === 'host')) dispatch('host_left')
-  })
-  ch.on('broadcast', { event: 'open_menu' }, ({ payload }) => {
-    if (payload.guestId === _myId) dispatch('open_menu', payload)
-  })
-  ch.on('broadcast', { event: 'close_menu' }, ({ payload }) => {
-    if (payload.guestId === _myId) dispatch('close_menu', payload)
-  })
 
   await ch.track({ role: 'guest', guestId: _myId, name: name ?? null })
   return { guestId: _myId }
