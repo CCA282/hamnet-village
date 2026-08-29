@@ -288,3 +288,8 @@ export async function loadServer(id) {
   if (error || !data) return null
   return { ...data.data, name: data.name, id, savedAt: data.saved_at }
 }
+
+export async function deleteServer(id) {
+  const { error } = await supabase.from('hamnet_worlds').delete().eq('id', id)
+  return !error
+}

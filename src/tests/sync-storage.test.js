@@ -20,6 +20,7 @@ function makeQueryBuilder(result) {
     order: vi.fn(() => builder),
     eq: vi.fn(() => builder),
     upsert: vi.fn(() => builder),
+    delete: vi.fn(() => builder),
     maybeSingle: vi.fn(() => builder),
     single: vi.fn(() => builder),
     then: (resolve) => resolve(result),
@@ -30,7 +31,7 @@ function makeQueryBuilder(result) {
 const supabaseMock = { auth: { getUser: vi.fn() }, from: vi.fn() }
 vi.mock('../net/supabase.js', () => ({ supabase: supabaseMock }))
 
-const { saveLocal, loadLocal, listLocalSaves, deleteLocal, saveServer, listServerSaves, loadServer } = await import('../net/sync.js')
+const { saveLocal, loadLocal, listLocalSaves, deleteLocal, saveServer, listServerSaves, loadServer, deleteServer } = await import('../net/sync.js')
 const { resetGame } = await import('../game/store.js')
 
 function signIn(userId) { supabaseMock.auth.getUser.mockResolvedValue({ data: { user: { id: userId } } }) }
@@ -145,5 +146,20 @@ describe('saveServer / listServerSaves / loadServer', () => {
   it('loadServer returns null on failure (e.g. owned by another account)', async () => {
     supabaseMock.from.mockReturnValue(makeQueryBuilder({ data: null, error: null }))
     expect(await loadServer('w1')).toBeNull()
+  })
+
+  it('deleteServer deletes the row by id and returns true on success', async () => {
+    const builder = makeQueryBuilder({ error: null })
+    supabaseMock.from.mockReturnValue(builder)
+
+    expect(await deleteServer('w1')).toBe(true)
+    expect(supabaseMock.from).toHaveBeenCalledWith('hamnet_worlds')
+    expect(builder.delete).toHaveBeenCalled()
+    expect(builder.eq).toHaveBeenCalledWith('id', 'w1')
+  })
+
+  it('deleteServer returns false when the delete fails (e.g. RLS denies)', async () => {
+    supabaseMock.from.mockReturnValue(makeQueryBuilder({ error: new Error('denied') }))
+    expect(await deleteServer('w1')).toBe(false)
   })
 })
