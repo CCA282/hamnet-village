@@ -258,3 +258,42 @@ describe('applyWorldState — lastProduced production icons', () => {
     expect(world.spawnIcon).toHaveBeenCalledWith('icon_wood', expect.any(Number), expect.any(Number))
   })
 })
+
+// ── Noisetier persistence ─────────────────────────────────────────────────────
+// world.noisette (non-reactive, read by actions.js/hints.js/renderer) is the
+// actual source of truth for the tree's growth — game.noisetierStage is only a
+// reactive mirror for the Objectives checklist. A save only persisted the mirror,
+// so reloading always showed a fresh stage-0 sprout regardless of real progress.
+
+describe('applyWorldState — noisette persistence', () => {
+  function makeNoisette(overrides = {}) {
+    return { x: 215, y: 351, stage: 0, growing: false, growTimer: 0, squirrelSpawnTimers: null, ...overrides }
+  }
+
+  it('restores stage/growing/growTimer onto world.noisette', () => {
+    const world = makeWorld({ noisette: makeNoisette() })
+    applyWorldState(world, makeSnap({ noisette: { stage: 2, growing: true, growTimer: 45 } }))
+    expect(world.noisette.stage).toBe(2)
+    expect(world.noisette.growing).toBe(true)
+    expect(world.noisette.growTimer).toBe(45)
+  })
+
+  it('syncs the game.noisetierStage mirror used by the Objectives checklist', () => {
+    const world = makeWorld({ noisette: makeNoisette() })
+    applyWorldState(world, makeSnap({ noisette: { stage: 3, growing: false, growTimer: 0 } }))
+    expect(game.noisetierStage).toBe(3)
+  })
+
+  it('preserves the tree position (x/y not part of the snapshot)', () => {
+    const world = makeWorld({ noisette: makeNoisette() })
+    applyWorldState(world, makeSnap({ noisette: { stage: 1, growing: false, growTimer: 0 } }))
+    expect(world.noisette.x).toBe(215)
+    expect(world.noisette.y).toBe(351)
+  })
+
+  it('leaves world.noisette untouched when the snapshot has none (e.g. guest-join broadcast)', () => {
+    const world = makeWorld({ noisette: makeNoisette({ stage: 2, growing: true, growTimer: 30 }) })
+    applyWorldState(world, makeSnap())
+    expect(world.noisette).toEqual(makeNoisette({ stage: 2, growing: true, growTimer: 30 }))
+  })
+})

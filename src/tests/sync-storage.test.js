@@ -43,6 +43,7 @@ function makeWorld() {
     buildingInventories: {}, prodTimers: {}, autoTransporters: [],
     meteoriteSpots: [], trees: [], stoneSpots: [], berryBushes: [], fishSpots: [],
     _meteoriteTimer: 0, _nextMeteoriteSpawn: 0, _nextId: 1,
+    noisette: { x: 215, y: 351, stage: 0, growing: false, growTimer: 0, squirrelSpawnTimers: null },
   }
 }
 
