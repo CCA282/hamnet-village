@@ -65,6 +65,7 @@ export function serializeWorld(world, { includeSpotsState = false } = {}) {
     snap.stoneSpots = world.stoneSpots.map((s) => ({ hp: s.hp, maxHp: s.maxHp, regrow: s.regrow }))
     snap.berryBushes = world.berryBushes.map((b) => ({ hp: b.hp, maxHp: b.maxHp, regrow: b.regrow }))
     snap.fishSpots = world.fishSpots.map((f) => ({ cd: f.cd }))
+    snap.noisette = { stage: world.noisette.stage, growing: world.noisette.growing, growTimer: world.noisette.growTimer }
   }
 
   return snap
@@ -219,6 +220,11 @@ export function applyWorldState(world, snap, { dropPlayers = false } = {}) {
     })
   }
   if (snap.fishSpots) snap.fishSpots.forEach((f, i) => { if (world.fishSpots[i]) Object.assign(world.fishSpots[i], f) })
+
+  if (snap.noisette) {
+    Object.assign(world.noisette, snap.noisette)
+    game.noisetierStage = world.noisette.stage
+  }
 }
 
 // ── Local save (localStorage) ─────────────────────────────────────────────────
