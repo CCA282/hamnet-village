@@ -70,7 +70,7 @@ export function serializeWorld(world, { includeSpotsState = false } = {}) {
   return snap
 }
 
-export function applyWorldState(world, snap) {
+export function applyWorldState(world, snap, { resetPlayerInputSource = false } = {}) {
   // Reactive state
   if (snap.wood !== undefined) game.wood = snap.wood
   if (snap.fish !== undefined) game.fish = snap.fish
@@ -97,6 +97,13 @@ export function applyWorldState(world, snap) {
       if (!p) {
         // New player: snap immediately, init lerp targets
         p = { ...sp, targetX: sp.x, targetY: sp.y, target: sp.targetHalo ?? null, remoteInput: null }
+        // Loading a save shouldn't force a specific input device on the restored
+        // characters — whichever device presses first claims the first unclaimed one
+        // (see World.claimOrAddPlayer). Doesn't apply to 'remote' (guest) players.
+        if (resetPlayerInputSource && p.source !== 'remote') {
+          p.source = null
+          p.gamepadIndex = null
+        }
         world.players.push(p)
       } else {
         // Existing player: update everything except x/y (those lerp in updateGuestVisuals)

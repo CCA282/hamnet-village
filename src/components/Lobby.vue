@@ -79,7 +79,7 @@ async function goServerSaves() {
 // ── Local mode ────────────────────────────────────────────────────────────────
 
 function startLocal(worldData = null, name = null) {
-  if (worldData) applyWorldState(engine.world, worldData)
+  if (worldData) applyWorldState(engine.world, worldData, { resetPlayerInputSource: true })
   netState.mode = 'local'
   if (worldData?.id) netState.worldId = worldData.id
   netState.worldName = name ?? worldData?.name ?? 'Mon monde'
@@ -132,7 +132,7 @@ async function createRoom(worldData = null, name = null) {
     displayCode.value = code
     netState.roomCode = code
 
-    if (worldData) applyWorldState(engine.world, worldData)
+    if (worldData) applyWorldState(engine.world, worldData, { resetPlayerInputSource: true })
 
     netState.worldName = name ?? worldData?.name ?? 'Mon monde'
     netState.mode = 'host'
