@@ -30,5 +30,6 @@ export const upgradesStorage = {
     costs: [{ meteorite: 3 }, { meteorite: 8 }, { meteorite: 18 }, { meteorite: 40 }, { meteorite: 80 }, { meteorite: 200 }],
     repeatable: true,
     max: 6,
+    requiresLevel: 3,
   },
 }

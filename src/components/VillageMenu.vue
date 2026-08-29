@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive } from 'vue'
-import { game, upgradeCost, canAfford, buyUpgrade, upgradeMaxed, globalCap, TAB_KEYS } from '../game/store.js'
+import { game, upgradeCost, canAfford, buyUpgrade, upgradeMaxed, globalCap, menuEntries } from '../game/store.js'
 import { UPGRADES, GLOBAL_CAPACITY_LEVELS } from '../game/constants/index.js'
 import { engine } from '../game/engine.js'
 import { spriteUrl } from '../game/sprites/index.js'
@@ -29,12 +29,10 @@ function setTab(i) {
   game.menuIndex = 0
 }
 
-const entries = computed(() => TAB_KEYS[game.menuTab]
-  .filter((key) => {
-    if (key === 'cap_meteorite') return game.villageLevel >= 3
-    if (key === 'pioche_stellaire') return (game.upgrades.pioche || 0) >= 1
-    return true
-  })
+// Same filtered/ordered key list keyboard & gamepad navigation walk (menu.js's
+// handleMenu) — using a separate filter here would desync game.menuIndex from
+// what's actually rendered, making the wrong entry get bought (or none at all).
+const entries = computed(() => menuEntries()
   .map((key) => {
   const def = UPGRADES[key]
   const level = game.upgrades[key]
