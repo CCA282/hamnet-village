@@ -6,7 +6,7 @@ import {
   onGuestJoined, onGuestLeft, onInput, onGuestMenuAction,
   onState, onOpenMenu, onCloseMenu, onHostLeft, onDisconnected,
 } from '../net/realtime.js'
-import { serializeWorld, applyWorldState, listLocalSaves, loadLocal, deleteLocal, listServerSaves, loadServer } from '../net/sync.js'
+import { serializeWorld, applyWorldState, listLocalSaves, loadLocal, deleteLocal, listServerSaves, loadServer, deleteServer } from '../net/sync.js'
 import { login, signup, logout } from '../net/accounts.js'
 import { engine } from '../game/engine.js'
 import { game } from '../game/store.js'
@@ -97,9 +97,19 @@ async function loadLocalWorld(id) {
   startLocal(data)
 }
 
-function removeLocalSave(id) {
-  deleteLocal(id)
-  localSaves.value = listLocalSaves()
+async function removeMySave(id) {
+  if (netState.user) await deleteServer(id)
+  else deleteLocal(id)
+}
+
+async function removeLocalSave(id) {
+  await removeMySave(id)
+  localSaves.value = await listMySaves()
+}
+
+async function removeServerSave(id) {
+  await removeMySave(id)
+  serverSaves.value = await listMySaves()
 }
 
 // ── Online host mode ──────────────────────────────────────────────────────────
@@ -335,7 +345,7 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
               <span class="sname">{{ s.name }}</span>
               <span class="sdate">{{ s.savedAt ? new Date(s.savedAt).toLocaleDateString('fr') : '' }}</span>
             </button>
-            <button v-if="!netState.user" class="save-delete" @pointerdown.stop="removeLocalSave(s.id)" title="Supprimer">🗑</button>
+            <button class="save-delete" @pointerdown.stop="removeLocalSave(s.id)" title="Supprimer">🗑</button>
           </div>
         </div>
         <p class="empty" v-else>Aucune sauvegarde</p>
@@ -383,14 +393,13 @@ const playing = computed(() => netState.mode !== null && step.value !== 'waiting
         <p class="sub small">{{ netState.user ? 'Sauvegardes de ton compte' : 'Sauvegardes sur cet appareil' }}</p>
         <p v-if="busy" class="loading">Chargement…</p>
         <div class="savelist" v-else-if="serverSaves.length">
-          <button
-            v-for="s in serverSaves" :key="s.id"
-            class="save-entry"
-            @pointerdown="loadServerAndHost(s.id)"
-          >
-            <span class="sname">{{ s.name }}</span>
-            <span class="sdate">{{ s.savedAt ? new Date(s.savedAt).toLocaleDateString('fr') : '' }}</span>
-          </button>
+          <div v-for="s in serverSaves" :key="s.id" class="save-row">
+            <button class="save-entry" @pointerdown="loadServerAndHost(s.id)">
+              <span class="sname">{{ s.name }}</span>
+              <span class="sdate">{{ s.savedAt ? new Date(s.savedAt).toLocaleDateString('fr') : '' }}</span>
+            </button>
+            <button class="save-delete" @pointerdown.stop="removeServerSave(s.id)" title="Supprimer">🗑</button>
+          </div>
         </div>
         <p class="empty" v-else>Aucune sauvegarde</p>
         <p class="err" v-if="error">{{ error }}</p>
