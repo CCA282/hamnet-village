@@ -13,12 +13,12 @@ function loadSettings() {
 export const audioSettings = reactive(loadSettings())
 
 const TRACKS = [
-  '/audio/music/music-01-jazz-melody.mp3',
-  '/audio/music/music-02-lofi-study.mp3',
-  '/audio/music/music-03-lofi-chill-2.mp3',
-  '/audio/music/music-04-lofi-beats.mp3',
-  '/audio/music/music-05-lofi-chill.mp3',
-]
+  'audio/music/music-01-jazz-melody.mp3',
+  'audio/music/music-02-lofi-study.mp3',
+  'audio/music/music-03-lofi-chill-2.mp3',
+  'audio/music/music-04-lofi-beats.mp3',
+  'audio/music/music-05-lofi-chill.mp3',
+].map((t) => import.meta.env.BASE_URL + t)
 
 function shuffle(arr) {
   const a = [...arr]
