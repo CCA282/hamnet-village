@@ -46,6 +46,7 @@ export const game = reactive({
   hint: '',
   hintOverride: '',
   telescopeOpen: false,
+  telescopeOpener: null,
   devMode: false,
   devCoords: [],
 
@@ -226,6 +227,6 @@ export function resetGame() {
   game.menuOpen = false; game.menuOpener = null; game.menuIndex = 0; game.menuTab = 0
   game.buildingMenuOpen = false; game.buildingMenuBuilding = null
   game.buildingMenuIndex = 0; game.buildingMenuOpener = null
-  game.timeOfDay = 0.15; game.hint = ''; game.hintOverride = ''; game.telescopeOpen = false; game.devMode = false; game.devCoords = []
+  game.timeOfDay = 0.15; game.hint = ''; game.hintOverride = ''; game.telescopeOpen = false; game.telescopeOpener = null; game.devMode = false; game.devCoords = []
   game.noisetierStage = 0; game.noisetierWatered = false; game.squirrelPetted = false
 }

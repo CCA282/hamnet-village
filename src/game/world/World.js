@@ -128,6 +128,7 @@ export class World {
       } else {
         if (game.menuOpen && game.menuOpener === p.id) { this.handleMenu(p, st); continue }
         if (game.buildingMenuOpen && game.buildingMenuOpener === p.id) { this.handleBuildingMenu(p, st); continue }
+        if (game.telescopeOpen && game.telescopeOpener === p.id) { this.handleTelescope(p, st); continue }
       }
       if (p.frozen) continue
 

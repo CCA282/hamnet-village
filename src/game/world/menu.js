@@ -34,6 +34,13 @@ export const menuMethods = {
     game.buildingMenuOpener = null
   },
 
+  closeTelescope() {
+    game.telescopeOpen = false
+    const op = this.findPlayer((x) => x.id === game.telescopeOpener)
+    if (op) op.frozen = false
+    game.telescopeOpener = null
+  },
+
   // ── Remote player menus (per-player state, don't touch global) ───────────
 
   openRemoteMenu(p) {
@@ -181,5 +188,11 @@ export const menuMethods = {
     else if (navDown && this.menuNavTimer <= 0) { setIndex((getIndex() + 1) % getEntries().length); this.menuNavTimer = 0.26 }
     if (st.action) buySelected()
     if (st.cancel) closeFn()
+  },
+
+  // The telescope view has nothing to navigate — any "back"-ish input closes it,
+  // matching the existing click-anywhere-on-the-scrim UX (see TelescopeModal.vue).
+  handleTelescope(p, st) {
+    if (st.cancel || st.action) this.closeTelescope()
   },
 }
