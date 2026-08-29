@@ -70,7 +70,7 @@ export function serializeWorld(world, { includeSpotsState = false } = {}) {
   return snap
 }
 
-export function applyWorldState(world, snap, { resetPlayerInputSource = false } = {}) {
+export function applyWorldState(world, snap, { dropPlayers = false } = {}) {
   // Reactive state
   if (snap.wood !== undefined) game.wood = snap.wood
   if (snap.fish !== undefined) game.fish = snap.fish
@@ -89,7 +89,13 @@ export function applyWorldState(world, snap, { resetPlayerInputSource = false } 
   }
 
   // Players
-  if (snap.players) {
+  if (dropPlayers) {
+    // Loading a save starts with nobody on screen — same as a brand new game.
+    // Pressing a join input spawns a fresh player (World.handleJoins/addPlayer),
+    // not a restored one; saved player stats/positions aren't reused.
+    world.players = []
+    world.syncPlayers()
+  } else if (snap.players) {
     const ids = new Set(snap.players.map((p) => p.id))
     world.players = world.players.filter((p) => ids.has(p.id))
     for (const sp of snap.players) {
@@ -97,13 +103,6 @@ export function applyWorldState(world, snap, { resetPlayerInputSource = false } 
       if (!p) {
         // New player: snap immediately, init lerp targets
         p = { ...sp, targetX: sp.x, targetY: sp.y, target: sp.targetHalo ?? null, remoteInput: null }
-        // Loading a save shouldn't force a specific input device on the restored
-        // characters — whichever device presses first claims the first unclaimed one
-        // (see World.claimOrAddPlayer). Doesn't apply to 'remote' (guest) players.
-        if (resetPlayerInputSource && p.source !== 'remote') {
-          p.source = null
-          p.gamepadIndex = null
-        }
         world.players.push(p)
       } else {
         // Existing player: update everything except x/y (those lerp in updateGuestVisuals)
