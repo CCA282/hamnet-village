@@ -45,7 +45,6 @@ export const playerMethods = {
   findPlayer(pred) { return this.players.find(pred) },
 
   inputFor(input, p) {
-    if (!p.source) return { mx: 0, my: 0, action: false, actionHeld: false }
     if (p.source === 'remote') {
       return p.remoteInput || { mx: 0, my: 0, action: false, actionHeld: false }
     }
@@ -97,35 +96,21 @@ export const playerMethods = {
     if (p) p.remoteInput = input
   },
 
-  // A restored save (see sync.js's resetPlayerInputSource) has characters with
-  // no input device attached yet (source: null) — the first device to press a
-  // join input claims the first unclaimed character instead of spawning a new one.
-  claimOrAddPlayer(source, gamepadIndex = null) {
-    const p = this.players.find((pl) => !pl.source)
-    if (p) {
-      p.source = source
-      p.gamepadIndex = gamepadIndex
-      this.syncPlayers()
-      return p
-    }
-    return this.addPlayer(source, gamepadIndex)
-  },
-
   handleJoins(input) {
     if (!this.findPlayer((p) => p.source === 'touch')) {
-      if (input.touchEngaged()) this.claimOrAddPlayer('touch')
+      if (input.touchEngaged()) this.addPlayer('touch')
     }
     if (!this.findPlayer((p) => p.source === 'kb1')) {
       const s = input.keyboardState('kb1')
-      if (s.action || input.mouseAction) this.claimOrAddPlayer('kb1')
+      if (s.action || input.mouseAction) this.addPlayer('kb1')
     }
     if (!this.findPlayer((p) => p.source === 'kb2')) {
       const s = input.keyboardState('kb2')
-      if (s.action) this.claimOrAddPlayer('kb2')
+      if (s.action) this.addPlayer('kb2')
     }
     for (const idx of input.padList()) {
       if (this.findPlayer((p) => p.source === 'pad' && p.gamepadIndex === idx)) continue
-      if (input.padAnyPressed(idx)) this.claimOrAddPlayer('pad', idx)
+      if (input.padAnyPressed(idx)) this.addPlayer('pad', idx)
     }
   },
 

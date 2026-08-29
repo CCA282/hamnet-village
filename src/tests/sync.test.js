@@ -128,10 +128,10 @@ describe('applyWorldState — player deposit particles', () => {
   })
 })
 
-// ── resetPlayerInputSource (loading a save shouldn't force a keyboard player) ──
+// ── dropPlayers (loading a save starts with nobody — same as a new game) ─────
 
-describe('applyWorldState — resetPlayerInputSource', () => {
-  it('clears source/gamepadIndex on restored local players when true', () => {
+describe('applyWorldState — dropPlayers', () => {
+  it('does not restore any player from the snapshot when true', () => {
     const world = makeWorld()
     applyWorldState(world, makeSnap({
       players: [{
@@ -139,14 +139,18 @@ describe('applyWorldState — resetPlayerInputSource', () => {
         inventory: {}, hint: '', facing: 0, walkPhase: 0, moving: false,
         spawn: false, harvestCd: 0, remoteGuestId: null, targetHalo: null,
       }],
-    }), { resetPlayerInputSource: true })
+    }), { dropPlayers: true })
 
-    expect(world.players[0].source).toBeNull()
-    expect(world.players[0].gamepadIndex).toBeNull()
-    expect(world.players[0].label).toBe('Camille') // identity otherwise untouched
+    expect(world.players).toEqual([])
   })
 
-  it('leaves source untouched by default (live network snapshots)', () => {
+  it('clears any pre-existing player too, not just the snapshot ones', () => {
+    const world = makeWorld({ players: [{ id: 99, source: 'kb1' }] })
+    applyWorldState(world, makeSnap({ players: [] }), { dropPlayers: true })
+    expect(world.players).toEqual([])
+  })
+
+  it('restores players normally by default (live network snapshots)', () => {
     const world = makeWorld()
     applyWorldState(world, makeSnap({
       players: [{
@@ -157,19 +161,7 @@ describe('applyWorldState — resetPlayerInputSource', () => {
     }))
 
     expect(world.players[0].source).toBe('kb1')
-  })
-
-  it('does not touch remote (guest) players even when true', () => {
-    const world = makeWorld()
-    applyWorldState(world, makeSnap({
-      players: [{
-        id: 1, x: 0, y: 0, label: 'Alice', color: '#fff', source: 'remote',
-        inventory: {}, hint: '', facing: 0, walkPhase: 0, moving: false,
-        spawn: false, harvestCd: 0, remoteGuestId: 'guest-abc', targetHalo: null,
-      }],
-    }), { resetPlayerInputSource: true })
-
-    expect(world.players[0].source).toBe('remote')
+    expect(world.players[0].label).toBe('Camille')
   })
 })
 
