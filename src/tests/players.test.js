@@ -8,6 +8,7 @@ vi.mock('../net/netState.js', () => ({
 
 const { playerMethods } = await import('../game/world/players.js')
 const { game, resetGame } = await import('../game/store.js')
+const { netState } = await import('../net/netState.js')
 import { MAX_PLAYERS } from '../game/constants/index.js'
 
 function makeCtx(overrides = {}) {
@@ -23,7 +24,7 @@ function makeCtx(overrides = {}) {
   }
 }
 
-beforeEach(() => resetGame())
+beforeEach(() => { resetGame(); netState.playerName = '' })
 
 // ── Solo ───────────────────────────────────────────────────────────────────────
 
@@ -111,6 +112,22 @@ describe('addPlayer — local co-op', () => {
     const p = w.addPlayer('pad', 0)
     expect(p.source).toBe('pad')
     expect(p.gamepadIndex).toBe(0)
+  })
+
+  it('first joining player gets netState.playerName regardless of input source', () => {
+    netState.playerName = 'Camille'
+    const w = makeCtx()
+    const p = w.addPlayer('pad', 0)
+    expect(p.label).toBe('Camille')
+  })
+
+  it('a later joining player does not get netState.playerName', () => {
+    netState.playerName = 'Camille'
+    const w = makeCtx()
+    w.addPlayer('kb1')
+    const p2 = w.addPlayer('pad', 0)
+    expect(p2.label).not.toBe('Camille')
+    expect(p2.label).toBe('P2')
   })
 
   it('is capped at MAX_PLAYERS', () => {

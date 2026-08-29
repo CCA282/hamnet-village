@@ -17,7 +17,7 @@ export const playerMethods = {
     const num = this._nextPlayerNum++
     const idx = this.players.length
     const angle = (idx / C.MAX_PLAYERS) * TWO_PI
-    const customName = source === 'kb1' ? (netState.playerName || '').trim() : ''
+    const customName = num === 1 ? (netState.playerName || '').trim() : ''
     const p = {
       id: this._nextId++,
       source, gamepadIndex, color,
