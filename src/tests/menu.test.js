@@ -113,6 +113,49 @@ describe('openBuildingMenu / closeBuildingMenu', () => {
   })
 })
 
+// ── closeTelescope / handleTelescope ────────────────────────────────────────
+
+describe('closeTelescope / handleTelescope', () => {
+  it('closeTelescope clears telescope state and unfreezes the opener', () => {
+    const p = makePlayer('pad', { frozen: true })
+    const w = makeCtx({ players: [p] })
+    game.telescopeOpen = true
+    game.telescopeOpener = p.id
+    w.closeTelescope()
+    expect(game.telescopeOpen).toBe(false)
+    expect(game.telescopeOpener).toBeNull()
+    expect(p.frozen).toBe(false)
+  })
+
+  it('handleTelescope closes on cancel (gamepad B / keyboard Q-Escape)', () => {
+    const p = makePlayer('pad', { frozen: true })
+    const w = makeCtx({ players: [p] })
+    game.telescopeOpen = true
+    game.telescopeOpener = p.id
+    w.handleTelescope(p, { cancel: true, action: false })
+    expect(game.telescopeOpen).toBe(false)
+    expect(p.frozen).toBe(false)
+  })
+
+  it('handleTelescope also closes on action (nothing to buy in this view)', () => {
+    const p = makePlayer('pad', { frozen: true })
+    const w = makeCtx({ players: [p] })
+    game.telescopeOpen = true
+    game.telescopeOpener = p.id
+    w.handleTelescope(p, { cancel: false, action: true })
+    expect(game.telescopeOpen).toBe(false)
+  })
+
+  it('handleTelescope does nothing when neither cancel nor action is pressed', () => {
+    const p = makePlayer('pad', { frozen: true })
+    const w = makeCtx({ players: [p] })
+    game.telescopeOpen = true
+    game.telescopeOpener = p.id
+    w.handleTelescope(p, { cancel: false, action: false })
+    expect(game.telescopeOpen).toBe(true)
+  })
+})
+
 // ── handleMenu — keyboard (kb1/kb2) ──────────────────────────────────────────
 
 describe('handleMenu — keyboard navigation', () => {

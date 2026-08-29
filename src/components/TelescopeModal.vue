@@ -1,6 +1,7 @@
 <script setup>
 import { computed, watch, ref, onUnmounted } from 'vue'
 import { game } from '../game/store.js'
+import { engine } from '../game/engine.js'
 
 const level = computed(() => game.buildingUpgrades.astronomy?.observatory || 0)
 
@@ -171,7 +172,7 @@ watch(
 
 onUnmounted(() => cancelAnimationFrame(raf))
 
-function close() { game.telescopeOpen = false }
+function close() { engine.world.closeTelescope() }
 </script>
 
 <template>

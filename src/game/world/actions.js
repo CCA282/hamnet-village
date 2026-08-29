@@ -255,7 +255,11 @@ export const actionMethods = {
       return
     }
     if (t.kind === 'telescope') {
-      if (isInitial) game.telescopeOpen = true
+      if (isInitial) {
+        game.telescopeOpen = true
+        game.telescopeOpener = p.id
+        p.frozen = true
+      }
       return
     }
     if (t.kind === 'squirrel') {
