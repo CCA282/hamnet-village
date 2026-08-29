@@ -128,6 +128,51 @@ describe('applyWorldState — player deposit particles', () => {
   })
 })
 
+// ── resetPlayerInputSource (loading a save shouldn't force a keyboard player) ──
+
+describe('applyWorldState — resetPlayerInputSource', () => {
+  it('clears source/gamepadIndex on restored local players when true', () => {
+    const world = makeWorld()
+    applyWorldState(world, makeSnap({
+      players: [{
+        id: 1, x: 0, y: 0, label: 'Camille', color: '#fff', source: 'kb1',
+        inventory: {}, hint: '', facing: 0, walkPhase: 0, moving: false,
+        spawn: false, harvestCd: 0, remoteGuestId: null, targetHalo: null,
+      }],
+    }), { resetPlayerInputSource: true })
+
+    expect(world.players[0].source).toBeNull()
+    expect(world.players[0].gamepadIndex).toBeNull()
+    expect(world.players[0].label).toBe('Camille') // identity otherwise untouched
+  })
+
+  it('leaves source untouched by default (live network snapshots)', () => {
+    const world = makeWorld()
+    applyWorldState(world, makeSnap({
+      players: [{
+        id: 1, x: 0, y: 0, label: 'Camille', color: '#fff', source: 'kb1',
+        inventory: {}, hint: '', facing: 0, walkPhase: 0, moving: false,
+        spawn: false, harvestCd: 0, remoteGuestId: null, targetHalo: null,
+      }],
+    }))
+
+    expect(world.players[0].source).toBe('kb1')
+  })
+
+  it('does not touch remote (guest) players even when true', () => {
+    const world = makeWorld()
+    applyWorldState(world, makeSnap({
+      players: [{
+        id: 1, x: 0, y: 0, label: 'Alice', color: '#fff', source: 'remote',
+        inventory: {}, hint: '', facing: 0, walkPhase: 0, moving: false,
+        spawn: false, harvestCd: 0, remoteGuestId: 'guest-abc', targetHalo: null,
+      }],
+    }), { resetPlayerInputSource: true })
+
+    expect(world.players[0].source).toBe('remote')
+  })
+})
+
 // ── Cart deposit animation (Bug #3) ──────────────────────────────────────────
 
 describe('applyWorldState — cart deposit particles', () => {
