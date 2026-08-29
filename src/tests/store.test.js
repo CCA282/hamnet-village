@@ -74,6 +74,7 @@ describe('menuEntries — requiresLevel filtering', () => {
   beforeEach(() => {
     game.menuTab = 1 // outils tab (contains pioche_stellaire)
     game.villageLevel = 1
+    game.upgrades.pioche = 1 // isolate requiresLevel from requiresUpgrade below
   })
 
   it('hides pioche_stellaire at village level 1', () => {
@@ -96,6 +97,39 @@ describe('menuEntries — requiresLevel filtering', () => {
     const entries = menuEntries()
     expect(entries).toContain('hache')
     expect(entries).toContain('pioche')
+  })
+})
+
+// Regression: VillageMenu.vue used to filter pioche_stellaire on its own
+// (owns pioche) while menu.js's keyboard/gamepad navigation filtered on
+// requiresLevel only — the two lists could differ in length/order, so
+// game.menuIndex (driven by the nav list) pointed at a different row than
+// what was rendered. Buying "the selected row" via keyboard/gamepad could
+// then silently target the wrong upgrade (e.g. fishing_rod's neighbor).
+// See src/components/VillageMenu.vue's `entries` computed.
+describe('menuEntries — requiresUpgrade filtering (keeps VillageMenu.vue in sync)', () => {
+  beforeEach(() => {
+    game.menuTab = 1
+    game.villageLevel = 3 // requiresLevel satisfied
+    game.upgrades.pioche = 0
+  })
+
+  it('hides pioche_stellaire when pioche is not owned, even at village level 3', () => {
+    expect(menuEntries()).not.toContain('pioche_stellaire')
+  })
+
+  it('shows pioche_stellaire once pioche is owned', () => {
+    game.upgrades.pioche = 1
+    expect(menuEntries()).toContain('pioche_stellaire')
+  })
+
+  it('keeps fishing_rod at a stable index regardless of pioche_stellaire visibility', () => {
+    // Without pioche_stellaire in the list (not owning pioche), fishing_rod
+    // must still be found by key — this is what game.menuIndex ultimately
+    // resolves to via entries()[getIndex()] in menu.js's buySelected().
+    expect(menuEntries()).toEqual(['hache', 'pioche', 'fishing_rod', 'faucille'])
+    game.upgrades.pioche = 1
+    expect(menuEntries()).toEqual(['hache', 'pioche', 'pioche_stellaire', 'fishing_rod', 'faucille'])
   })
 })
 

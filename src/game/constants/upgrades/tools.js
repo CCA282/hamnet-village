@@ -24,6 +24,7 @@ export const upgradesTools = {
     repeatable: false,
     max: 1,
     requiresLevel: 3,
+    requiresUpgrade: 'pioche',
   },
   fishing_rod: {
     name: '🎣 Canne à pêche',

@@ -123,6 +123,7 @@ export function menuEntries() {
     const def = UPGRADES[key]
     if (!def) return true
     if (def.requiresLevel && game.villageLevel < def.requiresLevel) return false
+    if (def.requiresUpgrade && !game.upgrades[def.requiresUpgrade]) return false
     return true
   })
 }
